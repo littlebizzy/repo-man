@@ -63,6 +63,7 @@ function repo_man_display_repos_plugins() {
     }
 
     ?>
+    <p><?php esc_html_e( 'These are hand-picked WordPress plugins hosted on public repositories, including GitHub, GitLab, and beyond.', 'repo-man' ); ?></p>
     <form id="plugin-filter" method="post">
         <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr( $_SERVER['REQUEST_URI'] ); ?>">
 
