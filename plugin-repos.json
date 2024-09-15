@@ -1,0 +1,44 @@
+[
+    {
+        "name": "Example Plugin One",
+        "slug": "example-plugin-one",
+        "url": "https://github.com/example/example-plugin-one",
+        "icon_url": "https://via.placeholder.com/128",
+        "description": "This is a sample WordPress plugin hosted on GitHub.",
+        "author": "Example Author",
+        "author_url": "https://github.com/example",
+        "rating": 4.5,
+        "ratings_count": 150,
+        "last_updated": "1 month ago",
+        "active_installs": "1,000+",
+        "compatible": true
+    },
+    {
+        "name": "Sample Plugin Two",
+        "slug": "sample-plugin-two",
+        "url": "https://gitlab.com/sample/sample-plugin-two",
+        "icon_url": "https://via.placeholder.com/128",
+        "description": "A sample WordPress plugin hosted on GitLab.",
+        "author": "Sample Author",
+        "author_url": "https://gitlab.com/sample",
+        "rating": 4.2,
+        "ratings_count": 120,
+        "last_updated": "2 weeks ago",
+        "active_installs": "500+",
+        "compatible": true
+    },
+    {
+        "name": "Test Plugin Three",
+        "slug": "test-plugin-three",
+        "url": "https://github.com/test/test-plugin-three",
+        "icon_url": "https://via.placeholder.com/128",
+        "description": "A test WordPress plugin hosted on GitHub.",
+        "author": "Test Author",
+        "author_url": "https://github.com/test",
+        "rating": 4.8,
+        "ratings_count": 200,
+        "last_updated": "3 days ago",
+        "active_installs": "5,000+",
+        "compatible": false
+    }
+]
