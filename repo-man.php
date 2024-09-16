@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.0.0
+Version: 1.1.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -28,12 +28,22 @@ add_action( 'load-plugin-install.php', 'repo_man_force_repos_tab' );
 function repo_man_force_repos_tab() {
     static $allowed_tabs = array( 'featured', 'popular', 'recommended', 'favorites', 'search', 'woo', 'upload', 'repos' );
 
+    // Early return if in a ThickBox iframe or viewing plugin information
     if ( ! empty( $_GET['TB_iframe'] ) || ( isset( $_GET['tab'] ) && $_GET['tab'] === 'plugin-information' ) ) {
         return;
     }
 
+    // If we're in a Network Admin area, skip forcing the 'repos' tab
+    if ( is_network_admin() ) {
+        return;
+    }
+
+    // Determine the appropriate admin URL based on whether we're in Network Admin
+    $admin_url = is_network_admin() ? network_admin_url( 'plugin-install.php' ) : admin_url( 'plugin-install.php' );
+
+    // If no valid tab is set, redirect to the 'repos' tab
     if ( ! isset( $_GET['tab'] ) || ! in_array( $_GET['tab'], $allowed_tabs, true ) ) {
-        wp_safe_redirect( esc_url_raw( admin_url( 'plugin-install.php?tab=repos' ) ) );
+        wp_safe_redirect( esc_url_raw( add_query_arg( 'tab', 'repos', $admin_url ) ) );
         exit;
     }
 }
