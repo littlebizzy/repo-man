@@ -124,25 +124,33 @@ function repo_man_render_pagination( $paged, $total_plugins, $total_pages, $posi
 // Function to render each plugin card
 function repo_man_render_plugin_card( $plugin ) {
     ?>
-    <div class="plugin-card plugin-card-<?php echo sanitize_title( $plugin['slug'] ); ?>">
+    <div class="plugin-card plugin-card-<?php echo esc_attr( sanitize_title( $plugin['slug'] ) ); ?>">
         <div class="plugin-card-top">
             <div class="name column-name">
                 <h3>
-                    <a href="<?php echo esc_url( $plugin['url'] ); ?>" class="thickbox open-plugin-details-modal">
+                    <a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal">
                         <?php echo esc_html( $plugin['name'] ); ?>
-                        <img src="<?php echo esc_url( $plugin['icon_url'] ); ?>" class="plugin-icon" alt="<?php echo esc_attr( $plugin['name'] ); ?>">
+                        <?php if ( ! empty( $plugin['icon_url'] ) ) : ?>
+                            <img src="<?php echo esc_url( $plugin['icon_url'] ); ?>" class="plugin-icon" alt="<?php echo esc_attr( $plugin['name'] ); ?>">
+                        <?php endif; ?>
                     </a>
                 </h3>
             </div>
             <div class="action-links">
                 <ul class="plugin-action-buttons">
-                    <li><a class="button" href="<?php echo esc_url( $plugin['url'] ); ?>" target="_blank"><?php esc_html_e( 'View on GitHub', 'repo-man' ); ?></a></li>
-                    <li><a href="<?php echo esc_url( $plugin['url'] ); ?>" class="thickbox open-plugin-details-modal"><?php esc_html_e( 'More Details', 'repo-man' ); ?></a></li>
+                    <li><a class="button" href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" target="_blank"><?php esc_html_e( 'View on GitHub', 'repo-man' ); ?></a></li>
+                    <li><a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal"><?php esc_html_e( 'More Details', 'repo-man' ); ?></a></li>
                 </ul>
             </div>
             <div class="desc column-description">
                 <p><?php echo esc_html( $plugin['description'] ); ?></p>
-                <p class="authors"><cite><?php esc_html_e( 'By', 'repo-man' ); ?> <a href="<?php echo esc_url( $plugin['author_url'] ); ?>"><?php echo esc_html( $plugin['author'] ); ?></a></cite></p>
+                <p class="authors">
+                    <cite><?php esc_html_e( 'By', 'repo-man' ); ?>
+                        <a href="<?php echo ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '#'; ?>">
+                            <?php echo esc_html( $plugin['author'] ); ?>
+                        </a>
+                    </cite>
+                </p>
             </div>
         </div>
         <div class="plugin-card-bottom">
