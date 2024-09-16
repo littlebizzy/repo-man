@@ -204,29 +204,34 @@ function repo_man_render_plugin_card( $plugin ) {
 function repo_man_get_plugins_data() {
     $file = plugin_dir_path( __FILE__ ) . 'plugin-repos.json';
 
+    // Check if the JSON file exists
     if ( ! file_exists( $file ) ) {
         return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing.', 'repo-man' ) );
     }
 
+    // Attempt to read the file contents
     $content = file_get_contents( $file );
 
-    if ( ! $content ) {
+    if ( false === $content ) {
         return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
     }
 
+    // Attempt to decode the JSON content
     $plugins = json_decode( $content, true );
 
+    // Handle JSON decoding errors
     if ( json_last_error() !== JSON_ERROR_NONE ) {
-        return new WP_Error( 'file_malformed', __( 'Error: The plugin-repos.json file is malformed.', 'repo-man' ) );
+        return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
     }
 
+    // Return the decoded array or an empty array if not valid
     return is_array( $plugins ) ? $plugins : [];
 }
 
 // Function to display admin notices
 function repo_man_display_admin_notice( $message ) {
     ?>
-    <div class="notice notice-error is-dismissible" style="border-left-color: #d63638;">
+    <div class="notice notice-error">
         <p><strong><?php echo esc_html( $message ); ?></strong></p>
     </div>
     <?php
