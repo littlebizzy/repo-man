@@ -178,18 +178,18 @@ function repo_man_render_plugin_card( $plugin ) {
     <?php
 }
 
-// Fetch plugin data from the custom file
+// Fetch plugin data from the custom file with secure handling and fallback for missing keys
 function repo_man_get_plugins_data() {
-    $file = plugin_dir_path( __FILE__ ) . 'plugin-repos.json';
-
-    // Check if the JSON file exists
-    if ( ! file_exists( $file ) ) {
-        return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing.', 'repo-man' ) );
+    // Define the file path securely and check its existence and readability
+    $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
+    
+    // Ensure the file is within the expected directory (security check)
+    if ( strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || ! file_exists( $file ) || ! is_readable( $file ) ) {
+        return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
     }
 
     // Attempt to read the file contents
     $content = file_get_contents( $file );
-
     if ( false === $content ) {
         return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
     }
@@ -202,8 +202,24 @@ function repo_man_get_plugins_data() {
         return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
     }
 
-    // Return the decoded array or an empty array if not valid
-    return is_array( $plugins ) ? $plugins : [];
+    // Ensure each plugin has the required keys with default values as fallback
+    foreach ( $plugins as &$plugin ) {
+        $plugin['slug'] = $plugin['slug'] ?? 'unknown-slug';
+        $plugin['url'] = $plugin['url'] ?? '#';
+        $plugin['name'] = $plugin['name'] ?? __( 'Unknown Plugin', 'repo-man' );
+        $plugin['icon_url'] = $plugin['icon_url'] ?? '';
+        $plugin['description'] = $plugin['description'] ?? __( 'No description available.', 'repo-man' );
+        $plugin['author'] = $plugin['author'] ?? __( 'Unknown Author', 'repo-man' );
+        $plugin['author_url'] = $plugin['author_url'] ?? '#';
+        $plugin['rating'] = $plugin['rating'] ?? 0;
+        $plugin['ratings_count'] = $plugin['ratings_count'] ?? 0;
+        $plugin['last_updated'] = $plugin['last_updated'] ?? __( 'Unknown', 'repo-man' );
+        $plugin['active_installs'] = $plugin['active_installs'] ?? 0;
+        $plugin['compatible'] = $plugin['compatible'] ?? false;
+    }
+
+    // Return the cleaned up plugins array
+    return $plugins;
 }
 
 // Function to display admin notices
