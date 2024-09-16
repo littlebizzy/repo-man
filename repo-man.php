@@ -182,9 +182,9 @@ function repo_man_render_plugin_card( $plugin ) {
 function repo_man_get_plugins_data() {
     // Define the file path securely and check its existence and readability
     $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
-    
+
     // Ensure the file is within the expected directory (security check)
-    if ( strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || ! file_exists( $file ) || ! is_readable( $file ) ) {
+    if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || ! is_readable( $file ) ) {
         return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
     }
 
