@@ -61,6 +61,11 @@ function repo_man_display_repos_plugins() {
     $plugins = repo_man_get_plugins_data();
     $plugins_per_page = 10;
 
+    if ( is_wp_error( $plugins ) ) {
+        repo_man_display_admin_notice( $plugins->get_error_message() );
+        return;
+    }
+
     $paged = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
     $total_plugins = count( $plugins );
     $total_pages = ceil( $total_plugins / $plugins_per_page );
@@ -198,13 +203,33 @@ function repo_man_render_plugin_card( $plugin ) {
 // Fetch plugin data from the custom file
 function repo_man_get_plugins_data() {
     $file = plugin_dir_path( __FILE__ ) . 'plugin-repos.json';
+
     if ( ! file_exists( $file ) ) {
-        return [];
+        return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing.', 'repo-man' ) );
     }
+
     $content = file_get_contents( $file );
+
+    if ( ! $content ) {
+        return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
+    }
+
     $plugins = json_decode( $content, true );
 
+    if ( json_last_error() !== JSON_ERROR_NONE ) {
+        return new WP_Error( 'file_malformed', __( 'Error: The plugin-repos.json file is malformed.', 'repo-man' ) );
+    }
+
     return is_array( $plugins ) ? $plugins : [];
+}
+
+// Function to display admin notices
+function repo_man_display_admin_notice( $message ) {
+    ?>
+    <div class="notice notice-error is-dismissible" style="border-left-color: #d63638;">
+        <p><strong><?php echo esc_html( $message ); ?></strong></p>
+    </div>
+    <?php
 }
 
 // Function to display star ratings
