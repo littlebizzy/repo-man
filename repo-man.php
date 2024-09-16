@@ -36,55 +36,37 @@ function repo_man_display_repos_plugins() {
     $plugins = repo_man_get_plugins_data();
     $plugins_per_page = 36;
 
+    // Display error message if plugins data retrieval fails
     if ( is_wp_error( $plugins ) ) {
         repo_man_display_admin_notice( $plugins->get_error_message() );
         return;
     }
 
+    // Handle pagination
     $paged = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
     $total_plugins = count( $plugins );
     $total_pages = ceil( $total_plugins / $plugins_per_page );
     $offset = ( $paged - 1 ) * $plugins_per_page;
     $paged_plugins = array_slice( $plugins, $offset, $plugins_per_page );
 
+    // Show message if no plugins are available
     if ( empty( $paged_plugins ) ) {
         echo '<p>' . esc_html__( 'No plugins available to display.', 'repo-man' ) . '</p>';
         return;
     }
 
+    // Display a description for the Repos tab
+    echo '<p>' . esc_html__( 'These are hand-picked WordPress plugins hosted on public repositories, including GitHub, GitLab, and beyond.', 'repo-man' ) . '</p>';
+
+    // Start the form for filtering and pagination
     ?>
-    <p><?php esc_html_e( 'These are hand-picked WordPress plugins hosted on public repositories, including GitHub, GitLab, and beyond.', 'repo-man' ); ?></p>
     <form id="plugin-filter" method="post">
         <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr( $_SERVER['REQUEST_URI'] ); ?>">
 
-        <div class="tablenav top">
-            <div class="alignleft actions"></div>
-            <div class="tablenav-pages">
-                <span class="displaying-num"><?php echo esc_html( $total_plugins ); ?> items</span>
-                <span class="pagination-links">
-                    <?php if ( $paged > 1 ): ?>
-                        <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1 ) ); ?>" aria-hidden="true">«</a>
-                        <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged - 1 ) ); ?>" aria-hidden="true">‹</a>
-                    <?php else: ?>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">«</span>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>
-                    <?php endif; ?>
-                    <span class="paging-input">
-                        <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e( 'Current Page', 'repo-man' ); ?></label>
-                        <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr( $paged ); ?>" size="1">
-                        <span class="tablenav-paging-text"><?php esc_html_e( 'of', 'repo-man' ); ?> <span class="total-pages"><?php echo esc_html( $total_pages ); ?></span></span>
-                    </span>
-                    <?php if ( $paged < $total_pages ): ?>
-                        <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged + 1 ) ); ?>" aria-hidden="true">›</a>
-                        <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages ) ); ?>" aria-hidden="true">»</a>
-                    <?php else: ?>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">»</span>
-                    <?php endif; ?>
-                </span>
-            </div>
-            <br class="clear">
-        </div>
+        <?php
+        // Display pagination at the top of the table
+        repo_man_render_pagination( $paged, $total_plugins, $total_pages, 'top' );
+        ?>
 
         <div class="wp-list-table widefat plugin-install">
             <h2 class="screen-reader-text"><?php esc_html_e( 'Plugins list', 'repo-man' ); ?></h2>
@@ -95,34 +77,47 @@ function repo_man_display_repos_plugins() {
             </div>
         </div>
 
-        <div class="tablenav bottom">
-            <div class="tablenav-pages">
-                <span class="displaying-num"><?php echo esc_html( $total_plugins ); ?> items</span>
-                <span class="pagination-links">
-                    <?php if ( $paged > 1 ): ?>
-                        <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1 ) ); ?>" aria-hidden="true">«</a>
-                        <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged - 1 ) ); ?>" aria-hidden="true">‹</a>
-                    <?php else: ?>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">«</span>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>
-                    <?php endif; ?>
-                    <span class="paging-input">
-                        <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e( 'Current Page', 'repo-man' ); ?></label>
-                        <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr( $paged ); ?>" size="1">
-                        <span class="tablenav-paging-text"><?php esc_html_e( 'of', 'repo-man' ); ?> <span class="total-pages"><?php echo esc_html( $total_pages ); ?></span></span>
-                    </span>
-                    <?php if ( $paged < $total_pages ): ?>
-                        <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged + 1 ) ); ?>" aria-hidden="true">›</a>
-                        <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages ) ); ?>" aria-hidden="true">»</a>
-                    <?php else: ?>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>
-                        <span class="tablenav-pages-navspan button disabled" aria-hidden="true">»</span>
-                    <?php endif; ?>
-                </span>
-            </div>
-            <br class="clear">
-        </div>
+        <?php
+        // Display pagination at the bottom of the table
+        repo_man_render_pagination( $paged, $total_plugins, $total_pages, 'bottom' );
+        ?>
     </form>
+    <?php
+}
+
+// Function to render pagination with appropriate classes for top or bottom
+function repo_man_render_pagination( $paged, $total_plugins, $total_pages, $position ) {
+    ?>
+    <div class="tablenav <?php echo esc_attr( $position ); ?>">
+        <div class="alignleft actions"></div>
+        <div class="tablenav-pages">
+            <span class="displaying-num"><?php echo esc_html( $total_plugins ); ?> items</span>
+            <span class="pagination-links">
+                <?php if ( $paged > 1 ) : ?>
+                    <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1 ) ); ?>" aria-hidden="true">«</a>
+                    <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged - 1 ) ); ?>" aria-hidden="true">‹</a>
+                <?php else : ?>
+                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">«</span>
+                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>
+                <?php endif; ?>
+
+                <span class="paging-input">
+                    <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e( 'Current Page', 'repo-man' ); ?></label>
+                    <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr( $paged ); ?>" size="1">
+                    <span class="tablenav-paging-text"><?php esc_html_e( 'of', 'repo-man' ); ?> <span class="total-pages"><?php echo esc_html( $total_pages ); ?></span></span>
+                </span>
+
+                <?php if ( $paged < $total_pages ) : ?>
+                    <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged + 1 ) ); ?>" aria-hidden="true">›</a>
+                    <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages ) ); ?>" aria-hidden="true">»</a>
+                <?php else : ?>
+                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>
+                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">»</span>
+                <?php endif; ?>
+            </span>
+        </div>
+        <br class="clear">
+    </div>
     <?php
 }
 
