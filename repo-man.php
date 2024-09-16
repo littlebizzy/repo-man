@@ -217,16 +217,29 @@ function repo_man_display_admin_notice( $message ) {
 
 // Function to display star ratings
 function repo_man_display_star_rating( $rating ) {
+    // Ensure $rating is sanitized
+    $rating = floatval( $rating );
     $full_stars = floor( $rating );
-    $html = '';
-    for ( $i = 0; $i < 5; $i++ ) {
-        if ( $i < $full_stars ) {
-            $html .= '<div class="star star-full" aria-hidden="true"></div>';
-        } else {
-            $html .= '<div class="star star-empty" aria-hidden="true"></div>';
-        }
+    $half_star = ( $rating - $full_stars ) >= 0.5;
+    $html = [];
+
+    // Add full stars
+    for ( $i = 0; $i < $full_stars; $i++ ) {
+        $html[] = '<div class="star star-full" aria-hidden="true"></div>';
     }
-    return $html;
+
+    // Add half star if applicable
+    if ( $half_star ) {
+        $html[] = '<div class="star star-half" aria-hidden="true"></div>';
+    }
+
+    // Add empty stars
+    $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
+    for ( $i = 0; $i < $empty_stars; $i++ ) {
+        $html[] = '<div class="star star-empty" aria-hidden="true"></div>';
+    }
+
+    return implode( '', $html );
 }
 
 // Ref: ChatGPT
