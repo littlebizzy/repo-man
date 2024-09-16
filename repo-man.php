@@ -34,7 +34,7 @@ function repo_man_prepend_repos_tab( $tabs ) {
 add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins' );
 function repo_man_display_repos_plugins() {
     $plugins = repo_man_get_plugins_data();
-    $plugins_per_page = 10;
+    $plugins_per_page = 36;
 
     if ( is_wp_error( $plugins ) ) {
         repo_man_display_admin_notice( $plugins->get_error_message() );
