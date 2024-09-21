@@ -1,8 +1,12 @@
 # Repo Man
 
-Adds GitHub plugins for WordPress
+Install public repos to WordPress
 
 ## Changelog
+
+### 1.1.1
+- added Disable Feeds plugin
+- sorted `plugin-repos.json` in alphabetical order
 
 ### 1.1.0
 - enhanced json file location security using `realpath()`
