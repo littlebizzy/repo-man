@@ -4,6 +4,9 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.2.1
+- changed 3 actions/filters to use priority `12`
+
 ### 1.2.0
 - added LittleBizzy icon from GitHub to appropriate plugins in `plugin-repos.json`
 - integrated json list into the native plugin search results (json list plugins should appear first)
