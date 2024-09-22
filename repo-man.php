@@ -261,28 +261,49 @@ function repo_man_display_star_rating( $rating ) {
 // Extend the search results to include plugins from the JSON file and place them first
 add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 10, 3 );
 function repo_man_extend_search_results( $res, $action, $args ) {
+    // Return early if not performing a plugin search
     if ( 'query_plugins' !== $action || empty( $args->search ) ) {
         return $res;
     }
 
-    $plugins = repo_man_get_plugins_data();
+    // Sanitize the search input
+    $search_query = sanitize_text_field( $args->search );
 
-    if ( ! is_wp_error( $plugins ) && ! empty( $plugins ) ) {
-        $matching_plugins = [];
+    // Fetch plugins, caching the result for this request to avoid multiple file reads
+    static $plugins = null;
+    if ( is_null( $plugins ) ) {
+        $plugins = repo_man_get_plugins_data();
+    }
 
-        // Match plugins from the JSON file with the search query (case-insensitive search)
-        foreach ( $plugins as $plugin ) {
-            if ( stripos( $plugin['name'], $args->search ) !== false || stripos( $plugin['description'], $args->search ) !== false ) {
-                $matching_plugins[] = (object) $plugin;
-            }
-        }
+    // If there was an error or no plugins found, return early
+    if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
+        return $res;
+    }
 
-        // Add the matching plugins to every page of search results, and increase the results count accordingly
-        if ( ! empty( $matching_plugins ) ) {
-            // Ensure the matching plugins are added to every page
-            $res->plugins = array_merge( $matching_plugins, $res->plugins );
-            $res->info['results'] += count( $matching_plugins );
-        }
+    // Match plugins from the JSON file with the search query (case-insensitive)
+    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
+        // Check if the necessary keys exist and search them
+        return isset( $plugin['name'], $plugin['description'] ) &&
+               ( stripos( $plugin['name'], $search_query ) !== false || 
+                 stripos( $plugin['description'], $search_query ) !== false );
+    });
+
+    // If matching plugins are found, add them at the beginning of the results
+    if ( ! empty( $matching_plugins ) ) {
+        // Convert plugins to objects and ensure no duplicates
+        $matching_plugins = array_map( function( $plugin ) {
+            return (object) $plugin;
+        }, $matching_plugins );
+
+        // Filter out duplicates using slugs (assuming each plugin has a unique slug)
+        $existing_slugs = wp_list_pluck( $res->plugins, 'slug' );
+        $matching_plugins = array_filter( $matching_plugins, function( $plugin ) use ( $existing_slugs ) {
+            return ! in_array( $plugin->slug, $existing_slugs, true );
+        });
+
+        // Add the matching plugins to the results and update the count
+        $res->plugins = array_merge( $matching_plugins, $res->plugins );
+        $res->info['results'] += count( $matching_plugins );
     }
 
     return $res;
