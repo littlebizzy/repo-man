@@ -4,6 +4,10 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.2.0
+- added LittleBizzy icon from GitHub to appropriate plugins in `plugin-repos.json`
+- integrated json list into the native plugin search results (json list plugins should appear first)
+
 ### 1.1.1
 - added Disable Feeds plugin
 - sorted `plugin-repos.json` in alphabetical order
