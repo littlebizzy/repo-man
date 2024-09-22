@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.2.0
+Version: 1.2.1
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -24,14 +24,14 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 });
 
 // Add the Repos tab and make it appear first
-add_filter( 'install_plugins_tabs', 'repo_man_prepend_repos_tab' );
+add_filter( 'install_plugins_tabs', 'repo_man_prepend_repos_tab', 12 );
 function repo_man_prepend_repos_tab( $tabs ) {
     $repos_tab = array( 'repos' => __( 'Public Repos', 'repo-man' ) );
     return array_merge( $repos_tab, $tabs );
 }
 
 // Display content for the Repos tab
-add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins' );
+add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins', 12 );
 function repo_man_display_repos_plugins() {
     $plugins = repo_man_get_plugins_data();
     $plugins_per_page = 36;
@@ -251,7 +251,7 @@ function repo_man_display_star_rating( $rating ) {
 
     // Add empty stars
     $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
-    for ( $i = 0; $i < $empty_stars; $i++ ) {
+    for ( $i = 0; $empty_stars > $i; $i++ ) {
         $html[] = '<div class="star star-empty" aria-hidden="true"></div>';
     }
 
@@ -259,7 +259,7 @@ function repo_man_display_star_rating( $rating ) {
 }
 
 // Extend the search results to include plugins from the JSON file and place them first
-add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 10, 3 );
+add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
 function repo_man_extend_search_results( $res, $action, $args ) {
     // Return early if not performing a plugin search
     if ( 'query_plugins' !== $action || empty( $args->search ) ) {
