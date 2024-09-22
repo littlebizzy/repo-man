@@ -295,13 +295,8 @@ function repo_man_extend_search_results( $res, $action, $args ) {
             return (object) $plugin;
         }, $matching_plugins );
 
-        // Filter out duplicates using slugs (assuming each plugin has a unique slug)
-        $existing_slugs = wp_list_pluck( $res->plugins, 'slug' );
-        $matching_plugins = array_filter( $matching_plugins, function( $plugin ) use ( $existing_slugs ) {
-            return ! in_array( $plugin->slug, $existing_slugs, true );
-        });
-
-        // Add the matching plugins to the results and update the count
+        // Instead of filtering out duplicates by slug, we allow both to exist in the results
+        // Just merge the matching plugins and keep both even if slugs are the same
         $res->plugins = array_merge( $matching_plugins, $res->plugins );
         $res->info['results'] += count( $matching_plugins );
     }
