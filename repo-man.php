@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.1.0
+Version: 1.2.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -256,6 +256,36 @@ function repo_man_display_star_rating( $rating ) {
     }
 
     return implode( '', $html );
+}
+
+// Extend the search results to include plugins from the JSON file and place them first
+add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 10, 3 );
+function repo_man_extend_search_results( $res, $action, $args ) {
+    if ( 'query_plugins' !== $action || empty( $args->search ) ) {
+        return $res;
+    }
+
+    $plugins = repo_man_get_plugins_data();
+
+    if ( ! is_wp_error( $plugins ) && ! empty( $plugins ) ) {
+        $matching_plugins = [];
+
+        // Match plugins from the JSON file with the search query (case-insensitive search)
+        foreach ( $plugins as $plugin ) {
+            if ( stripos( $plugin['name'], $args->search ) !== false || stripos( $plugin['description'], $args->search ) !== false ) {
+                $matching_plugins[] = (object) $plugin;
+            }
+        }
+
+        // Add the matching plugins to every page of search results, and increase the results count accordingly
+        if ( ! empty( $matching_plugins ) ) {
+            // Ensure the matching plugins are added to every page
+            $res->plugins = array_merge( $matching_plugins, $res->plugins );
+            $res->info['results'] += count( $matching_plugins );
+        }
+    }
+
+    return $res;
 }
 
 // Ref: ChatGPT
