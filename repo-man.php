@@ -251,7 +251,7 @@ function repo_man_display_star_rating( $rating ) {
 
     // Add empty stars
     $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
-    for ( $i = 0; $empty_stars > $i; $i++ ) {
+    for ( $i = 0; $i < $empty_stars; $i++ ) {
         $html[] = '<div class="star star-empty" aria-hidden="true"></div>';
     }
 
