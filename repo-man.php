@@ -39,8 +39,6 @@ function repo_man_adjust_repos_tab_position( $tabs ) {
     return array_merge( $repos_tab, $tabs );
 }
 
-
-
 // Display content for the Repos tab using native plugin list rendering
 add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins', 12 );
 function repo_man_display_repos_plugins() {
@@ -54,29 +52,37 @@ function repo_man_display_repos_plugins() {
     }
 
     // Handle pagination
-    $paged = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
+    $paged = max( 1, intval( $_GET['paged'] ?? 1 ) );  // Get current page or default to 1
     $total_plugins = count( $plugins );
     $total_pages = ceil( $total_plugins / $plugins_per_page );
     $offset = ( $paged - 1 ) * $plugins_per_page;
+
+    // Apply pagination and slice the plugins for current page
     $paged_plugins = array_slice( $plugins, $offset, $plugins_per_page );
 
+    // If no plugins are found, show a message
+    if ( empty( $paged_plugins ) ) {
+        echo '<p>' . esc_html__( 'No plugins available to display.', 'repo-man' ) . '</p>';
+        return;
+    }
+
     // Prepare the plugins array in the same format expected by WordPress
-    $plugins = array_map( function( $plugin ) {
+    $paged_plugins = array_map( function( $plugin ) {
         return [
-            'name'              => $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
-            'slug'              => $plugin['slug'] ?? 'unknown-slug',
-            'author'            => $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ),
-            'author_profile'    => $plugin['author_url'] ?? '#',
-            'version'           => $plugin['version'] ?? '1.0.0',
-            'rating'            => isset( $plugin['rating'] ) ? $plugin['rating'] * 20 : 0,
-            'num_ratings'       => $plugin['num_ratings'] ?? 0,
-            'homepage'          => $plugin['url'] ?? '#',
-            'download_link'     => $plugin['url'] ?? '#',
-            'last_updated'      => $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ),
-            'active_installs'   => $plugin['active_installs'] ?? 0,
-            'short_description' => $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ),
+            'name'              => esc_html( $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ) ),
+            'slug'              => esc_attr( $plugin['slug'] ?? 'unknown-slug' ),
+            'author'            => esc_html( $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ) ),
+            'author_profile'    => esc_url( $plugin['author_url'] ?? '#' ),
+            'version'           => esc_html( $plugin['version'] ?? '1.0.0' ),
+            'rating'            => intval( $plugin['rating'] ?? 0 ) * 20,  // Handle rating as a number
+            'num_ratings'       => intval( $plugin['num_ratings'] ?? 0 ),
+            'homepage'          => esc_url( $plugin['url'] ?? '#' ),
+            'download_link'     => esc_url( $plugin['url'] ?? '#' ),
+            'last_updated'      => esc_html( $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ) ),
+            'active_installs'   => intval( $plugin['active_installs'] ?? 0 ),
+            'short_description' => esc_html( $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ) ),
             'icons'             => [
-                'default' => ! empty( $plugin['icon_url'] ) ? $plugin['icon_url'] : '',
+                'default' => esc_url( $plugin['icon_url'] ?? '' ),
             ],
             'compatible'        => $plugin['compatible'] ?? false,
         ];
@@ -84,18 +90,20 @@ function repo_man_display_repos_plugins() {
 
     // Use WordPress's native plugin list rendering to display the plugins
     $plugin_list_table = new WP_Plugin_Install_List_Table();
-    $plugin_list_table->items = $plugins;
+    $plugin_list_table->items = $paged_plugins;
 
     // Set pagination
-    $plugin_list_table->set_pagination_args([
+    $plugin_list_table->set_pagination_args( [
         'total_items' => $total_plugins,
         'per_page'    => $plugins_per_page,
         'total_pages' => $total_pages,
-    ]);
+    ] );
 
     // Output the list table
     $plugin_list_table->display();
 }
+
+
 
 // Extend the search results to include plugins from the JSON file and place them first
 add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
