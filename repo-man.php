@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.2.1
+Version: 1.3.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -21,16 +21,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_filter( 'gu_override_dot_org', function( $overrides ) {
     $overrides[] = 'repo-man/repo-man.php';
     return $overrides;
-});
+}, 999 );
 
-// Add the Repos tab and make it appear first
-add_filter( 'install_plugins_tabs', 'repo_man_prepend_repos_tab', 12 );
-function repo_man_prepend_repos_tab( $tabs ) {
-    $repos_tab = array( 'repos' => __( 'Public Repos', 'repo-man' ) );
+// Add the Repos tab and adjust its position based on search activity
+add_filter( 'install_plugins_tabs', 'repo_man_adjust_repos_tab_position', 12 );
+function repo_man_adjust_repos_tab_position( $tabs ) {
+    // Define the "Public Repos" tab
+    $repos_tab = array( 'repos' => _x( 'Public Repos', 'Tab title', 'repo-man' ) );
+
+    // Check if the Search Results tab should be first (active search)
+    if ( isset( $_GET['s'] ) && ! empty( $_GET['s'] ) ) {
+        // Ensure Search Results is first, then Public Repos, then the rest
+        return array_merge( array_slice( $tabs, 0, 1 ), $repos_tab, array_slice( $tabs, 1 ) );
+    }
+
+    // Prepend "Public Repos" as the first tab when no search is active
     return array_merge( $repos_tab, $tabs );
 }
 
-// Display content for the Repos tab
+
+
+// Display content for the Repos tab using native plugin list rendering
 add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins', 12 );
 function repo_man_display_repos_plugins() {
     $plugins = repo_man_get_plugins_data();
@@ -49,160 +60,177 @@ function repo_man_display_repos_plugins() {
     $offset = ( $paged - 1 ) * $plugins_per_page;
     $paged_plugins = array_slice( $plugins, $offset, $plugins_per_page );
 
-    // Show message if no plugins are available
-    if ( empty( $paged_plugins ) ) {
-        echo '<p>' . esc_html__( 'No plugins available to display.', 'repo-man' ) . '</p>';
-        return;
+    // Prepare the plugins array in the same format expected by WordPress
+    $plugins = array_map( function( $plugin ) {
+        return [
+            'name'              => $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
+            'slug'              => $plugin['slug'] ?? 'unknown-slug',
+            'author'            => $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ),
+            'author_profile'    => $plugin['author_url'] ?? '#',
+            'version'           => $plugin['version'] ?? '1.0.0',
+            'rating'            => isset( $plugin['rating'] ) ? $plugin['rating'] * 20 : 0,
+            'num_ratings'       => $plugin['num_ratings'] ?? 0,
+            'homepage'          => $plugin['url'] ?? '#',
+            'download_link'     => $plugin['url'] ?? '#',
+            'last_updated'      => $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ),
+            'active_installs'   => $plugin['active_installs'] ?? 0,
+            'short_description' => $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ),
+            'icons'             => [
+                'default' => ! empty( $plugin['icon_url'] ) ? $plugin['icon_url'] : '',
+            ],
+            'compatible'        => $plugin['compatible'] ?? false,
+        ];
+    }, $paged_plugins );
+
+    // Use WordPress's native plugin list rendering to display the plugins
+    $plugin_list_table = new WP_Plugin_Install_List_Table();
+    $plugin_list_table->items = $plugins;
+
+    // Set pagination
+    $plugin_list_table->set_pagination_args([
+        'total_items' => $total_plugins,
+        'per_page'    => $plugins_per_page,
+        'total_pages' => $total_pages,
+    ]);
+
+    // Output the list table
+    $plugin_list_table->display();
+}
+
+// Extend the search results to include plugins from the JSON file and place them first
+add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
+function repo_man_extend_search_results( $res, $action, $args ) {
+    if ( 'query_plugins' !== $action || empty( $args->search ) ) {
+        return $res;
     }
 
-    // Display a description for the Repos tab
-    echo '<p>' . esc_html__( 'These are hand-picked WordPress plugins hosted on public repositories, including GitHub, GitLab, and beyond.', 'repo-man' ) . '</p>';
+    $search_query = sanitize_text_field( $args->search );
+    $plugins = repo_man_get_plugins_data_with_cache();
 
-    // Start the form for filtering and pagination
+    if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
+        return $res;
+    }
+
+    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
+        return isset( $plugin['name'], $plugin['description'] ) &&
+               ( stripos( $plugin['name'], $search_query ) !== false ||
+                 stripos( $plugin['description'], $search_query ) !== false );
+    });
+
+    if ( ! empty( $matching_plugins ) ) {
+        $matching_plugins = array_map( function( $plugin ) {
+            return [
+                'name'              => $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
+                'slug'              => $plugin['slug'] ?? 'unknown-slug',
+                'author'            => $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ),
+                'author_profile'    => $plugin['author_url'] ?? '#',
+                'version'           => $plugin['version'] ?? '1.0.0',
+                'rating'            => isset( $plugin['rating'] ) ? $plugin['rating'] * 20 : 0,
+                'num_ratings'       => $plugin['num_ratings'] ?? 0,
+                'homepage'          => $plugin['url'] ?? '#',
+                'download_link'     => $plugin['url'] ?? '#',
+                'last_updated'      => $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ),
+                'active_installs'   => $plugin['active_installs'] ?? 0,
+                'short_description' => $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ),
+                'icons'             => [
+                    'default' => ! empty( $plugin['icon_url'] ) ? $plugin['icon_url'] : '',
+                ],
+                'compatible'        => $plugin['compatible'] ?? false,
+            ];
+        }, $matching_plugins );
+
+        $res->plugins = array_merge( $matching_plugins, $res->plugins );
+        $res->info['results'] += count( $matching_plugins );
+    }
+
+    return $res;
+}
+
+// Enqueue necessary JS files for plugin search
+add_action( 'admin_enqueue_scripts', 'repo_man_enqueue_plugin_search_scripts' );
+function repo_man_enqueue_plugin_search_scripts( $hook_suffix ) {
+    if ( $hook_suffix === 'plugin-install.php' ) {
+        wp_enqueue_script( 'plugin-install' );
+        wp_enqueue_script( 'updates' ); // This helps with AJAX behavior
+    }
+}
+
+// Inject custom search logic into the plugin search form
+add_action( 'admin_footer-plugin-install.php', 'repo_man_inject_search_logic' );
+function repo_man_inject_search_logic() {
     ?>
-    <form id="plugin-filter" method="post">
-        <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr( $_SERVER['REQUEST_URI'] ); ?>">
+    <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            $(document).on('input', '#search-plugins', function() {
+                var search_term = $(this).val();
+                if (window.location.href.indexOf('tab=repos') !== -1) {
+                    var url = window.location.href.split('?')[0] + '?tab=repos&s=' + encodeURIComponent(search_term);
+                    window.history.replaceState({}, '', url);
 
-        <?php
-        // Display pagination at the top of the table
-        repo_man_render_pagination( $paged, $total_plugins, $total_pages, 'top' );
-        ?>
-
-        <div class="wp-list-table widefat plugin-install">
-            <h2 class="screen-reader-text"><?php esc_html_e( 'Plugins list', 'repo-man' ); ?></h2>
-            <div id="the-list">
-                <?php foreach ( $paged_plugins as $plugin ) : ?>
-                    <?php repo_man_render_plugin_card( $plugin ); ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <?php
-        // Display pagination at the bottom of the table
-        repo_man_render_pagination( $paged, $total_plugins, $total_pages, 'bottom' );
-        ?>
-    </form>
+                    // Trigger AJAX request to update plugin tiles
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'plugin_install_repos_search',
+                            s: search_term,
+                            repo_man_nonce: repoMan.nonce
+                        },
+                        success: function(response) {
+                            if (response.success && response.data.html) {
+                                var newContent = $('<div>').html(response.data.html).find('#the-list').html();
+                                $('#the-list').html(newContent);
+                                tb_init('a.thickbox'); // Initialize Thickbox for modals
+                                $('.install-now').off().on('click', function(e) {
+                                    e.preventDefault();
+                                    wp.updates.installPlugin({
+                                        slug: $(this).data('slug')
+                                    });
+                                });
+                            } else {
+                                console.error('No HTML content returned in AJAX response');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('AJAX request failed:', status, error);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
     <?php
 }
 
-// Function to render pagination with appropriate classes for top or bottom
-function repo_man_render_pagination( $paged, $total_plugins, $total_pages, $position ) {
-    ?>
-    <div class="tablenav <?php echo esc_attr( $position ); ?>">
-        <div class="alignleft actions"></div>
-        <div class="tablenav-pages">
-            <span class="displaying-num"><?php echo esc_html( $total_plugins ); ?> items</span>
-            <span class="pagination-links">
-                <?php if ( $paged > 1 ) : ?>
-                    <a class="first-page button" href="<?php echo esc_url( add_query_arg( 'paged', 1 ) ); ?>" aria-hidden="true">«</a>
-                    <a class="prev-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged - 1 ) ); ?>" aria-hidden="true">‹</a>
-                <?php else : ?>
-                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">«</span>
-                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>
-                <?php endif; ?>
-
-                <span class="paging-input">
-                    <label for="current-page-selector" class="screen-reader-text"><?php esc_html_e( 'Current Page', 'repo-man' ); ?></label>
-                    <input class="current-page" id="current-page-selector" type="text" name="paged" value="<?php echo esc_attr( $paged ); ?>" size="1">
-                    <span class="tablenav-paging-text"><?php esc_html_e( 'of', 'repo-man' ); ?> <span class="total-pages"><?php echo esc_html( $total_pages ); ?></span></span>
-                </span>
-
-                <?php if ( $paged < $total_pages ) : ?>
-                    <a class="next-page button" href="<?php echo esc_url( add_query_arg( 'paged', $paged + 1 ) ); ?>" aria-hidden="true">›</a>
-                    <a class="last-page button" href="<?php echo esc_url( add_query_arg( 'paged', $total_pages ) ); ?>" aria-hidden="true">»</a>
-                <?php else : ?>
-                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>
-                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true">»</span>
-                <?php endif; ?>
-            </span>
-        </div>
-        <br class="clear">
-    </div>
-    <?php
+// Fetch plugin data from the custom file with caching
+function repo_man_get_plugins_data_with_cache() {
+    $plugins = get_transient( 'repo_man_plugins' );
+    if ( false === $plugins ) {
+        $plugins = repo_man_get_plugins_data();
+        if ( ! is_wp_error( $plugins ) ) {
+            set_transient( 'repo_man_plugins', $plugins, HOUR_IN_SECONDS );
+        }
+    }
+    return $plugins;
 }
 
-// Function to render each plugin card
-function repo_man_render_plugin_card( $plugin ) {
-    ?>
-    <div class="plugin-card plugin-card-<?php echo esc_attr( sanitize_title( $plugin['slug'] ) ); ?>">
-        <div class="plugin-card-top">
-            <div class="name column-name">
-                <h3>
-                    <a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal">
-                        <?php echo esc_html( $plugin['name'] ); ?>
-                        <?php if ( ! empty( $plugin['icon_url'] ) ) : ?>
-                            <img src="<?php echo esc_url( $plugin['icon_url'] ); ?>" class="plugin-icon" alt="<?php echo esc_attr( $plugin['name'] ); ?>">
-                        <?php endif; ?>
-                    </a>
-                </h3>
-            </div>
-            <div class="action-links">
-                <ul class="plugin-action-buttons">
-                    <li><a class="button" href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" target="_blank"><?php esc_html_e( 'View on GitHub', 'repo-man' ); ?></a></li>
-                    <li><a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal"><?php esc_html_e( 'More Details', 'repo-man' ); ?></a></li>
-                </ul>
-            </div>
-            <div class="desc column-description">
-                <p><?php echo esc_html( $plugin['description'] ); ?></p>
-                <p class="authors">
-                    <cite><?php esc_html_e( 'By', 'repo-man' ); ?>
-                        <a href="<?php echo ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '#'; ?>">
-                            <?php echo esc_html( $plugin['author'] ); ?>
-                        </a>
-                    </cite>
-                </p>
-            </div>
-        </div>
-        <div class="plugin-card-bottom">
-            <div class="vers column-rating">
-                <div class="star-rating">
-                    <span class="screen-reader-text"><?php echo esc_html( $plugin['rating'] ); ?> rating based on <?php echo esc_html( $plugin['ratings_count'] ); ?> ratings</span>
-                    <?php echo repo_man_display_star_rating( $plugin['rating'] ); ?>
-                </div>
-                <span class="num-ratings" aria-hidden="true">(<?php echo esc_html( $plugin['ratings_count'] ); ?>)</span>
-            </div>
-            <div class="column-updated">
-                <strong><?php esc_html_e( 'Last Updated:', 'repo-man' ); ?></strong> <?php echo esc_html( $plugin['last_updated'] ); ?>
-            </div>
-            <div class="column-downloaded">
-                <?php echo esc_html( $plugin['active_installs'] ); ?> <?php esc_html_e( 'Active Installations', 'repo-man' ); ?>
-            </div>
-            <div class="column-compatibility">
-                <span class="compatibility-<?php echo esc_attr( $plugin['compatible'] ? 'compatible' : 'incompatible' ); ?>">
-                    <strong><?php echo $plugin['compatible'] ? esc_html__( 'Compatible', 'repo-man' ) : esc_html__( 'Incompatible', 'repo-man' ); ?></strong>
-                    <?php esc_html_e( 'with your version of WordPress', 'repo-man' ); ?>
-                </span>
-            </div>
-        </div>
-    </div>
-    <?php
-}
-
-// Fetch plugin data from the custom file with secure handling and fallback for missing keys
+// Fetch plugin data securely and with fallback handling
 function repo_man_get_plugins_data() {
-    // Define the file path securely and check its existence and readability
     $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
-
-    // Ensure the file is within the expected directory (security check)
-    if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || ! is_readable( $file ) ) {
+    if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || strpos( $file, ABSPATH ) !== 0 || ! is_readable( $file ) ) {
         return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
     }
 
-    // Attempt to read the file contents
     $content = file_get_contents( $file );
     if ( false === $content ) {
         return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
     }
 
-    // Attempt to decode the JSON content
     $plugins = json_decode( $content, true );
-
-    // Handle JSON decoding errors
     if ( json_last_error() !== JSON_ERROR_NONE ) {
         return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
     }
 
-    // Ensure each plugin has the required keys with default values as fallback
     foreach ( $plugins as &$plugin ) {
         $plugin['slug'] = $plugin['slug'] ?? 'unknown-slug';
         $plugin['url'] = $plugin['url'] ?? '#';
@@ -218,90 +246,77 @@ function repo_man_get_plugins_data() {
         $plugin['compatible'] = $plugin['compatible'] ?? false;
     }
 
-    // Return the cleaned up plugins array
     return $plugins;
 }
 
-// Function to display admin notices
-function repo_man_display_admin_notice( $message ) {
-    ?>
-    <div class="notice notice-error">
-        <p><strong><?php echo esc_html( $message ); ?></strong></p>
-    </div>
-    <?php
-}
+// Handle the custom AJAX request for the Public Repos search
+add_action( 'wp_ajax_plugin_install_repos_search', 'repo_man_handle_repos_search' );
+add_action( 'wp_ajax_nopriv_plugin_install_repos_search', 'repo_man_handle_repos_search' );
 
-// Function to display star ratings
-function repo_man_display_star_rating( $rating ) {
-    // Ensure $rating is sanitized
-    $rating = floatval( $rating );
-    $full_stars = floor( $rating );
-    $half_star = ( $rating - $full_stars ) >= 0.5;
-    $html = [];
+function repo_man_handle_repos_search() {
+    // Sanitize the search term
+    $search_term = isset( $_POST['s'] ) ? sanitize_text_field( $_POST['s'] ) : '';
 
-    // Add full stars
-    for ( $i = 0; $i < $full_stars; $i++ ) {
-        $html[] = '<div class="star star-full" aria-hidden="true"></div>';
+    // Verify nonce for security
+    if ( ! isset( $_POST['repo_man_nonce'] ) || ! wp_verify_nonce( $_POST['repo_man_nonce'], 'repo_man_nonce_action' ) ) {
+        wp_send_json_error( array( 'message' => __( 'Invalid nonce verification', 'repo-man' ) ) );
+        wp_die();
     }
 
-    // Add half star if applicable
-    if ( $half_star ) {
-        $html[] = '<div class="star star-half" aria-hidden="true"></div>';
+    // Load required classes and functions
+    if ( ! class_exists( 'WP_Plugin_Install_List_Table' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/class-wp-plugin-install-list-table.php';
+    }
+    if ( ! function_exists( 'wp_get_plugin_action_button' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
     }
 
-    // Add empty stars
-    $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
-    for ( $i = 0; $i < $empty_stars; $i++ ) {
-        $html[] = '<div class="star star-empty" aria-hidden="true"></div>';
+    // Fetch Repo Man plugins from JSON
+    $repo_plugins = repo_man_get_plugins_data_with_cache();
+
+    // Handle error for Repo Man plugin retrieval
+    if ( is_wp_error( $repo_plugins ) ) {
+        wp_send_json_error( [ 'message' => $repo_plugins->get_error_message() ] );
+        wp_die();
     }
 
-    return implode( '', $html );
-}
-
-// Extend the search results to include plugins from the JSON file and place them first
-add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
-function repo_man_extend_search_results( $res, $action, $args ) {
-    // Return early if not performing a plugin search
-    if ( 'query_plugins' !== $action || empty( $args->search ) ) {
-        return $res;
-    }
-
-    // Sanitize the search input
-    $search_query = sanitize_text_field( $args->search );
-
-    // Fetch plugins, caching the result for this request to avoid multiple file reads
-    static $plugins = null;
-    if ( is_null( $plugins ) ) {
-        $plugins = repo_man_get_plugins_data();
-    }
-
-    // If there was an error or no plugins found, return early
-    if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
-        return $res;
-    }
-
-    // Match plugins from the JSON file with the search query (case-insensitive)
-    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
-        // Check if the necessary keys exist and search them
-        return isset( $plugin['name'], $plugin['description'] ) &&
-               ( stripos( $plugin['name'], $search_query ) !== false || 
-                 stripos( $plugin['description'], $search_query ) !== false );
+    // Filter Repo Man plugins by search term
+    $matching_repo_plugins = array_filter( $repo_plugins, function( $plugin ) use ( $search_term ) {
+        return stripos( $plugin['name'], $search_term ) !== false ||
+               stripos( $plugin['description'], $search_term ) !== false;
     });
 
-    // If matching plugins are found, add them at the beginning of the results
-    if ( ! empty( $matching_plugins ) ) {
-        // Convert plugins to objects and ensure no duplicates
-        $matching_plugins = array_map( function( $plugin ) {
-            return (object) $plugin;
-        }, $matching_plugins );
+    // Fetch WordPress.org plugin search results
+    $api = plugins_api( 'query_plugins', array(
+        'search'   => $search_term,
+        'page'     => 1,
+        'per_page' => 36,
+    ));
 
-        // Instead of filtering out duplicates by slug, we allow both to exist in the results
-        // Just merge the matching plugins and keep both even if slugs are the same
-        $res->plugins = array_merge( $matching_plugins, $res->plugins );
-        $res->info['results'] += count( $matching_plugins );
+    if ( is_wp_error( $api ) ) {
+        wp_send_json_error( [ 'message' => $api->get_error_message() ] );
+        wp_die();
     }
 
-    return $res;
+    // Merge Repo Man and WordPress.org plugins
+    $combined_plugins = array_merge(
+        array_map( 'repo_man_prepare_plugin_for_display', $matching_repo_plugins ),
+        $api->plugins
+    );
+
+    // Output the HTML for the plugins using the WP Plugin Install List Table
+    if ( ! empty( $combined_plugins ) ) {
+        $plugin_list_table = new WP_Plugin_Install_List_Table();
+        $plugin_list_table->items = $combined_plugins;
+        ob_start();
+        $plugin_list_table->display();
+        $output = ob_get_clean();
+        wp_send_json_success( [ 'html' => $output ] );
+    } else {
+        wp_send_json_error( [ 'message' => __( 'No plugins found.', 'repo-man' ) ] );
+    }
+
+    wp_die(); // Always end the AJAX request
 }
 
 // Ref: ChatGPT
