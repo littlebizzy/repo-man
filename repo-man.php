@@ -67,26 +67,7 @@ function repo_man_display_repos_plugins() {
     }
 
     // Prepare the plugins array in the same format expected by WordPress
-    $paged_plugins = array_map( function( $plugin ) {
-        return [
-            'name'              => esc_html( $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ) ),
-            'slug'              => esc_attr( $plugin['slug'] ?? 'unknown-slug' ),
-            'author'            => esc_html( $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ) ),
-            'author_profile'    => esc_url( $plugin['author_url'] ?? '#' ),
-            'version'           => esc_html( $plugin['version'] ?? '1.0.0' ),
-            'rating'            => intval( $plugin['rating'] ?? 0 ) * 20,  // Handle rating as a number
-            'num_ratings'       => intval( $plugin['num_ratings'] ?? 0 ),
-            'homepage'          => esc_url( $plugin['url'] ?? '#' ),
-            'download_link'     => esc_url( $plugin['url'] ?? '#' ),
-            'last_updated'      => esc_html( $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ) ),
-            'active_installs'   => intval( $plugin['active_installs'] ?? 0 ),
-            'short_description' => esc_html( $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ) ),
-            'icons'             => [
-                'default' => esc_url( $plugin['icon_url'] ?? '' ),
-            ],
-            'compatible'        => $plugin['compatible'] ?? false,
-        ];
-    }, $paged_plugins );
+    $paged_plugins = array_map( 'repo_man_prepare_plugin_for_display', $paged_plugins );
 
     // Use WordPress's native plugin list rendering to display the plugins
     $plugin_list_table = new WP_Plugin_Install_List_Table();
@@ -101,6 +82,49 @@ function repo_man_display_repos_plugins() {
 
     // Output the list table
     $plugin_list_table->display();
+}
+
+// Normalize and prepare the plugin data for WordPress list table display
+function repo_man_prepare_plugin_for_display( $plugin ) {
+    // Normalize the data with fallbacks
+    $plugin = repo_man_normalize_plugin_data( $plugin );
+
+    // Return an array formatted for WordPress's native plugin display, with all necessary escaping
+    return [
+        'name'              => esc_html( $plugin['name'] ),
+        'slug'              => esc_attr( $plugin['slug'] ),
+        'author'            => esc_html( $plugin['author'] ),
+        'author_profile'    => esc_url( $plugin['author_url'] ),  // URL escape needed for links
+        'version'           => esc_html( $plugin['version'] ),
+        'rating'            => intval( $plugin['rating'] ) * 20,  // Convert rating to a percentage
+        'num_ratings'       => intval( $plugin['num_ratings'] ),
+        'homepage'          => esc_url( $plugin['url'] ),  // URL escape needed for links
+        'download_link'     => esc_url( $plugin['url'] ),  // URL escape needed for links
+        'last_updated'      => esc_html( $plugin['last_updated'] ),
+        'active_installs'   => intval( $plugin['active_installs'] ),
+        'short_description' => esc_html( $plugin['description'] ),
+        'icons'             => [
+            'default' => esc_url( $plugin['icon_url'] ),  // URL escape needed for links
+        ],
+    ];
+}
+
+// Normalize plugin data with fallback defaults
+function repo_man_normalize_plugin_data( $plugin ) {
+    return [
+        'name'              => $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
+        'slug'              => $plugin['slug'] ?? 'unknown-slug',
+        'author'            => $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ),
+        'author_url'        => $plugin['author_url'] ?? '#',
+        'version'           => $plugin['version'] ?? '1.0.0',
+        'rating'            => $plugin['rating'] ?? 0,
+        'num_ratings'       => $plugin['num_ratings'] ?? 0,
+        'url'               => $plugin['url'] ?? '#',
+        'last_updated'      => $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ),
+        'active_installs'   => $plugin['active_installs'] ?? 0,
+        'description'       => $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ),
+        'icon_url'          => $plugin['icon_url'] ?? '',
+    ];
 }
 
 // Extend the search results to include plugins from the JSON file and place them first
