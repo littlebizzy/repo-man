@@ -103,53 +103,62 @@ function repo_man_display_repos_plugins() {
     $plugin_list_table->display();
 }
 
-
-
 // Extend the search results to include plugins from the JSON file and place them first
 add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
 function repo_man_extend_search_results( $res, $action, $args ) {
+    // Return early if not searching for plugins
     if ( 'query_plugins' !== $action || empty( $args->search ) ) {
         return $res;
     }
 
+    // Sanitize the search query
     $search_query = sanitize_text_field( $args->search );
+
+    // Fetch plugins data from the transient cache
     $plugins = repo_man_get_plugins_data_with_cache();
 
+    // Return the original results if an error occurred or there are no plugins
     if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
         return $res;
     }
 
+    // Filter plugins that match the search query
     $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
         return isset( $plugin['name'], $plugin['description'] ) &&
                ( stripos( $plugin['name'], $search_query ) !== false ||
                  stripos( $plugin['description'], $search_query ) !== false );
     });
 
-    if ( ! empty( $matching_plugins ) ) {
-        $matching_plugins = array_map( function( $plugin ) {
-            return [
-                'name'              => $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
-                'slug'              => $plugin['slug'] ?? 'unknown-slug',
-                'author'            => $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ),
-                'author_profile'    => $plugin['author_url'] ?? '#',
-                'version'           => $plugin['version'] ?? '1.0.0',
-                'rating'            => isset( $plugin['rating'] ) ? $plugin['rating'] * 20 : 0,
-                'num_ratings'       => $plugin['num_ratings'] ?? 0,
-                'homepage'          => $plugin['url'] ?? '#',
-                'download_link'     => $plugin['url'] ?? '#',
-                'last_updated'      => $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ),
-                'active_installs'   => $plugin['active_installs'] ?? 0,
-                'short_description' => $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ),
-                'icons'             => [
-                    'default' => ! empty( $plugin['icon_url'] ) ? $plugin['icon_url'] : '',
-                ],
-                'compatible'        => $plugin['compatible'] ?? false,
-            ];
-        }, $matching_plugins );
-
-        $res->plugins = array_merge( $matching_plugins, $res->plugins );
-        $res->info['results'] += count( $matching_plugins );
+    // If no matching plugins are found, return the original results
+    if ( empty( $matching_plugins ) ) {
+        return $res;
     }
+
+    // Format each matching plugin for WordPress's expected structure
+    $formatted_plugins = array_map( function( $plugin ) {
+        return [
+            'name'              => esc_html( $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ) ),
+            'slug'              => esc_attr( $plugin['slug'] ?? 'unknown-slug' ),
+            'author'            => esc_html( $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ) ),
+            'author_profile'    => esc_url( $plugin['author_url'] ?? '#' ),
+            'version'           => esc_html( $plugin['version'] ?? '1.0.0' ),
+            'rating'            => isset( $plugin['rating'] ) ? intval( $plugin['rating'] ) * 20 : 0,
+            'num_ratings'       => intval( $plugin['num_ratings'] ?? 0 ),
+            'homepage'          => esc_url( $plugin['url'] ?? '#' ),
+            'download_link'     => esc_url( $plugin['url'] ?? '#' ),
+            'last_updated'      => esc_html( $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ) ),
+            'active_installs'   => intval( $plugin['active_installs'] ?? 0 ),
+            'short_description' => esc_html( $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ) ),
+            'icons'             => [
+                'default' => esc_url( $plugin['icon_url'] ?? '' ),
+            ],
+            'compatible'        => isset( $plugin['compatible'] ) ? (bool) $plugin['compatible'] : false,
+        ];
+    }, $matching_plugins );
+
+    // Prepend matching plugins to the WordPress search results
+    $res->plugins = array_merge( $formatted_plugins, $res->plugins );
+    $res->info['results'] += count( $formatted_plugins );
 
     return $res;
 }
