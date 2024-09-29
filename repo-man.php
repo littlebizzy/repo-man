@@ -94,6 +94,9 @@ function repo_man_extend_search_results( $res, $action, $args ) {
 
     // Sanitize the search query
     $search_query = sanitize_text_field( $args->search );
+    
+    // Split the search query into individual words
+    $search_terms = explode( ' ', $search_query );
 
     // Fetch plugins data from the transient cache
     $plugins = repo_man_get_plugins_data_with_cache();
@@ -106,10 +109,14 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     // Normalize the plugins data
     $plugins = array_map( 'repo_man_normalize_plugin_data', $plugins );
 
-    // Filter plugins that match the search query
-    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
-        return stripos( $plugin['name'], $search_query ) !== false || 
-               stripos( $plugin['description'], $search_query ) !== false;
+    // Filter plugins that match any of the search terms
+    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_terms ) {
+        foreach ( $search_terms as $term ) {
+            if ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false ) {
+                return true;
+            }
+        }
+        return false;
     });
 
     // If no matching plugins are found, return the original results
