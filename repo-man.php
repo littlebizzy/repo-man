@@ -42,7 +42,7 @@ function repo_man_adjust_repos_tab_position( $tabs ) {
 // Display content for the Repos tab using native plugin list rendering
 add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins', 12 );
 function repo_man_display_repos_plugins() {
-    $plugins = repo_man_get_plugins_data();
+    $plugins = repo_man_get_plugins_data_with_cache();
     $plugins_per_page = 36;
 
     // Display error message if plugins data retrieval fails
@@ -52,12 +52,12 @@ function repo_man_display_repos_plugins() {
     }
 
     // Handle pagination
-    $paged = max( 1, intval( $_GET['paged'] ?? 1 ) );  // Get current page or default to 1
+    $paged = max( 1, intval( $_GET['paged'] ?? 1 ) );
     $total_plugins = count( $plugins );
     $total_pages = ceil( $total_plugins / $plugins_per_page );
     $offset = ( $paged - 1 ) * $plugins_per_page;
 
-    // Apply pagination and slice the plugins for current page
+    // Paginate plugins
     $paged_plugins = array_slice( $plugins, $offset, $plugins_per_page );
 
     // If no plugins are found, show a message
@@ -66,7 +66,7 @@ function repo_man_display_repos_plugins() {
         return;
     }
 
-    // Prepare the plugins array in the same format expected by WordPress
+    // Prepare the plugins for display
     $paged_plugins = array_map( 'repo_man_prepare_plugin_for_display', $paged_plugins );
 
     // Use WordPress's native plugin list rendering to display the plugins
@@ -78,53 +78,10 @@ function repo_man_display_repos_plugins() {
         'total_items' => $total_plugins,
         'per_page'    => $plugins_per_page,
         'total_pages' => $total_pages,
-    ] );
+    ]);
 
     // Output the list table
     $plugin_list_table->display();
-}
-
-// Normalize and prepare the plugin data for WordPress list table display
-function repo_man_prepare_plugin_for_display( $plugin ) {
-    // Normalize the data with fallbacks
-    $plugin = repo_man_normalize_plugin_data( $plugin );
-
-    // Return an array formatted for WordPress's native plugin display, with all necessary escaping
-    return [
-        'name'              => esc_html( $plugin['name'] ),
-        'slug'              => esc_attr( $plugin['slug'] ),
-        'author'            => esc_html( $plugin['author'] ),
-        'author_profile'    => esc_url( $plugin['author_url'] ),  // URL escape needed for links
-        'version'           => esc_html( $plugin['version'] ),
-        'rating'            => intval( $plugin['rating'] ) * 20,  // Convert rating to a percentage
-        'num_ratings'       => intval( $plugin['num_ratings'] ),
-        'homepage'          => esc_url( $plugin['url'] ),  // URL escape needed for links
-        'download_link'     => esc_url( $plugin['url'] ),  // URL escape needed for links
-        'last_updated'      => esc_html( $plugin['last_updated'] ),
-        'active_installs'   => intval( $plugin['active_installs'] ),
-        'short_description' => esc_html( $plugin['description'] ),
-        'icons'             => [
-            'default' => esc_url( $plugin['icon_url'] ),  // URL escape needed for links
-        ],
-    ];
-}
-
-// Normalize plugin data with fallback defaults
-function repo_man_normalize_plugin_data( $plugin ) {
-    return [
-        'name'              => $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
-        'slug'              => $plugin['slug'] ?? 'unknown-slug',
-        'author'            => $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ),
-        'author_url'        => $plugin['author_url'] ?? '#',
-        'version'           => $plugin['version'] ?? '1.0.0',
-        'rating'            => $plugin['rating'] ?? 0,
-        'num_ratings'       => $plugin['num_ratings'] ?? 0,
-        'url'               => $plugin['url'] ?? '#',
-        'last_updated'      => $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ),
-        'active_installs'   => $plugin['active_installs'] ?? 0,
-        'description'       => $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ),
-        'icon_url'          => $plugin['icon_url'] ?? '',
-    ];
 }
 
 // Extend the search results to include plugins from the JSON file and place them first
@@ -146,11 +103,13 @@ function repo_man_extend_search_results( $res, $action, $args ) {
         return $res;
     }
 
+    // Normalize the plugins data
+    $plugins = array_map( 'repo_man_normalize_plugin_data', $plugins );
+
     // Filter plugins that match the search query
     $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
-        return isset( $plugin['name'], $plugin['description'] ) &&
-               ( stripos( $plugin['name'], $search_query ) !== false ||
-                 stripos( $plugin['description'], $search_query ) !== false );
+        return stripos( $plugin['name'], $search_query ) !== false || 
+               stripos( $plugin['description'], $search_query ) !== false;
     });
 
     // If no matching plugins are found, return the original results
@@ -159,32 +118,92 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     }
 
     // Format each matching plugin for WordPress's expected structure
-    $formatted_plugins = array_map( function( $plugin ) {
-        return [
-            'name'              => esc_html( $plugin['name'] ?? _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ) ),
-            'slug'              => esc_attr( $plugin['slug'] ?? 'unknown-slug' ),
-            'author'            => esc_html( $plugin['author'] ?? _x( 'Unknown Author', 'Default author name', 'repo-man' ) ),
-            'author_profile'    => esc_url( $plugin['author_url'] ?? '#' ),
-            'version'           => esc_html( $plugin['version'] ?? '1.0.0' ),
-            'rating'            => isset( $plugin['rating'] ) ? intval( $plugin['rating'] ) * 20 : 0,
-            'num_ratings'       => intval( $plugin['num_ratings'] ?? 0 ),
-            'homepage'          => esc_url( $plugin['url'] ?? '#' ),
-            'download_link'     => esc_url( $plugin['url'] ?? '#' ),
-            'last_updated'      => esc_html( $plugin['last_updated'] ?? _x( 'Unknown', 'Default last updated', 'repo-man' ) ),
-            'active_installs'   => intval( $plugin['active_installs'] ?? 0 ),
-            'short_description' => esc_html( $plugin['description'] ?? _x( 'No description available.', 'Default description', 'repo-man' ) ),
-            'icons'             => [
-                'default' => esc_url( $plugin['icon_url'] ?? '' ),
-            ],
-            'compatible'        => isset( $plugin['compatible'] ) ? (bool) $plugin['compatible'] : false,
-        ];
-    }, $matching_plugins );
+    $formatted_plugins = array_map( 'repo_man_prepare_plugin_for_display', $matching_plugins );
 
     // Prepend matching plugins to the WordPress search results
     $res->plugins = array_merge( $formatted_plugins, $res->plugins );
     $res->info['results'] += count( $formatted_plugins );
 
     return $res;
+}
+
+// Prepare the plugin for display by WordPress (single function for both use cases)
+function repo_man_prepare_plugin_for_display( $plugin ) {
+    return [
+        'name'              => esc_html( $plugin['name'] ),
+        'slug'              => esc_attr( $plugin['slug'] ),
+        'author'            => esc_html( $plugin['author'] ),
+        'author_profile'    => esc_url( $plugin['author_url'] ),
+        'version'           => esc_html( $plugin['version'] ),
+        'rating'            => intval( $plugin['rating'] ) * 20,  // Convert rating to a percentage
+        'num_ratings'       => intval( $plugin['num_ratings'] ),
+        'homepage'          => esc_url( $plugin['url'] ),
+        'download_link'     => esc_url( $plugin['url'] ),
+        'last_updated'      => esc_html( $plugin['last_updated'] ),
+        'active_installs'   => intval( $plugin['active_installs'] ),
+        'short_description' => esc_html( $plugin['description'] ),
+        'icons'             => [
+            'default' => esc_url( $plugin['icon_url'] ),
+        ],
+    ];
+}
+
+// Normalize the plugin data to ensure all required keys are present
+function repo_man_normalize_plugin_data( $plugin ) {
+    // Define the default values in one place
+    $defaults = [
+        'name'              => _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
+        'slug'              => 'unknown-slug',
+        'author'            => _x( 'Unknown Author', 'Default author name', 'repo-man' ),
+        'author_url'        => '#',
+        'version'           => '1.0.0',
+        'rating'            => 0,
+        'num_ratings'       => 0,
+        'url'               => '#',
+        'last_updated'      => _x( 'Unknown', 'Default last updated', 'repo-man' ),
+        'active_installs'   => 0,
+        'description'       => _x( 'No description available.', 'Default description', 'repo-man' ),
+        'icon_url'          => '',
+    ];
+
+    // Merge the plugin data with defaults
+    return array_merge( $defaults, $plugin );
+}
+
+// Fetch plugin data with caching via transients, only define once
+if ( ! function_exists( 'repo_man_get_plugins_data_with_cache' ) ) {
+    function repo_man_get_plugins_data_with_cache() {
+        $plugins = get_transient( 'repo_man_plugins' );
+        if ( false === $plugins ) {
+            $plugins = repo_man_get_plugins_data();
+            if ( ! is_wp_error( $plugins ) ) {
+                set_transient( 'repo_man_plugins', $plugins, HOUR_IN_SECONDS );
+            }
+        }
+        return $plugins;
+    }
+}
+
+// Fetch plugin data securely and with fallback handling, only define once
+if ( ! function_exists( 'repo_man_get_plugins_data' ) ) {
+    function repo_man_get_plugins_data() {
+        $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
+        if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || strpos( $file, ABSPATH ) !== 0 || ! is_readable( $file ) ) {
+            return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
+        }
+
+        $content = file_get_contents( $file );
+        if ( false === $content ) {
+            return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
+        }
+
+        $plugins = json_decode( $content, true );
+        if ( json_last_error() !== JSON_ERROR_NONE ) {
+            return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
+        }
+
+        return $plugins;
+    }
 }
 
 // Enqueue necessary JS files for plugin search
@@ -241,53 +260,6 @@ function repo_man_inject_search_logic() {
         });
     </script>
     <?php
-}
-
-// Fetch plugin data from the custom file with caching
-function repo_man_get_plugins_data_with_cache() {
-    $plugins = get_transient( 'repo_man_plugins' );
-    if ( false === $plugins ) {
-        $plugins = repo_man_get_plugins_data();
-        if ( ! is_wp_error( $plugins ) ) {
-            set_transient( 'repo_man_plugins', $plugins, HOUR_IN_SECONDS );
-        }
-    }
-    return $plugins;
-}
-
-// Fetch plugin data securely and with fallback handling
-function repo_man_get_plugins_data() {
-    $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
-    if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || strpos( $file, ABSPATH ) !== 0 || ! is_readable( $file ) ) {
-        return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
-    }
-
-    $content = file_get_contents( $file );
-    if ( false === $content ) {
-        return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
-    }
-
-    $plugins = json_decode( $content, true );
-    if ( json_last_error() !== JSON_ERROR_NONE ) {
-        return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
-    }
-
-    foreach ( $plugins as &$plugin ) {
-        $plugin['slug'] = $plugin['slug'] ?? 'unknown-slug';
-        $plugin['url'] = $plugin['url'] ?? '#';
-        $plugin['name'] = $plugin['name'] ?? __( 'Unknown Plugin', 'repo-man' );
-        $plugin['icon_url'] = $plugin['icon_url'] ?? '';
-        $plugin['description'] = $plugin['description'] ?? __( 'No description available.', 'repo-man' );
-        $plugin['author'] = $plugin['author'] ?? __( 'Unknown Author', 'repo-man' );
-        $plugin['author_url'] = $plugin['author_url'] ?? '#';
-        $plugin['rating'] = $plugin['rating'] ?? 0;
-        $plugin['ratings_count'] = $plugin['ratings_count'] ?? 0;
-        $plugin['last_updated'] = $plugin['last_updated'] ?? __( 'Unknown', 'repo-man' );
-        $plugin['active_installs'] = $plugin['active_installs'] ?? 0;
-        $plugin['compatible'] = $plugin['compatible'] ?? false;
-    }
-
-    return $plugins;
 }
 
 // Handle the custom AJAX request for the Public Repos search
