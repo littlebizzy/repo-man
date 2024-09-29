@@ -92,11 +92,11 @@ function repo_man_extend_search_results( $res, $action, $args ) {
         return $res;
     }
 
-    // Sanitize the search query
-    $search_query = sanitize_text_field( $args->search );
-    
+    // Sanitize the search query, preserving spaces
+    $search_query = sanitize_textarea_field( $args->search );
+
     // Split the search query into individual words
-    $search_terms = explode( ' ', $search_query );
+    $search_terms = array_filter( explode( ' ', $search_query ) );
 
     // Fetch plugins data from the transient cache
     $plugins = repo_man_get_plugins_data_with_cache();
@@ -109,15 +109,22 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     // Normalize the plugins data
     $plugins = array_map( 'repo_man_normalize_plugin_data', $plugins );
 
-    // Filter plugins that match any of the search terms
-    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_terms ) {
-        foreach ( $search_terms as $term ) {
-            if ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false ) {
-                return true;
-            }
-        }
-        return false;
+    // Step 1: First, check for an exact match of the full search term in the name or description
+    $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
+        return stripos( $plugin['name'], $search_query ) !== false || stripos( $plugin['description'], $search_query ) !== false;
     });
+
+    // Step 2: If no exact match, fallback to individual word matching
+    if ( empty( $matching_plugins ) ) {
+        $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_terms ) {
+            foreach ( $search_terms as $term ) {
+                if ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false ) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
 
     // If no matching plugins are found, return the original results
     if ( empty( $matching_plugins ) ) {
@@ -134,30 +141,8 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     return $res;
 }
 
-// Prepare the plugin for display by WordPress (single function for both use cases)
-function repo_man_prepare_plugin_for_display( $plugin ) {
-    return [
-        'name'              => esc_html( $plugin['name'] ),
-        'slug'              => esc_attr( $plugin['slug'] ),
-        'author'            => esc_html( $plugin['author'] ),
-        'author_profile'    => esc_url( $plugin['author_url'] ),
-        'version'           => esc_html( $plugin['version'] ),
-        'rating'            => intval( $plugin['rating'] ) * 20,  // Convert rating to a percentage
-        'num_ratings'       => intval( $plugin['num_ratings'] ),
-        'homepage'          => esc_url( $plugin['url'] ),
-        'download_link'     => esc_url( $plugin['url'] ),
-        'last_updated'      => esc_html( $plugin['last_updated'] ),
-        'active_installs'   => intval( $plugin['active_installs'] ),
-        'short_description' => esc_html( $plugin['description'] ),
-        'icons'             => [
-            'default' => esc_url( $plugin['icon_url'] ),
-        ],
-    ];
-}
-
 // Normalize the plugin data to ensure all required keys are present
 function repo_man_normalize_plugin_data( $plugin ) {
-    // Define the default values in one place
     $defaults = [
         'name'              => _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
         'slug'              => 'unknown-slug',
@@ -172,9 +157,31 @@ function repo_man_normalize_plugin_data( $plugin ) {
         'description'       => _x( 'No description available.', 'Default description', 'repo-man' ),
         'icon_url'          => '',
     ];
-
-    // Merge the plugin data with defaults
     return array_merge( $defaults, $plugin );
+}
+
+// Prepare the plugin for display by WordPress
+function repo_man_prepare_plugin_for_display( $plugin ) {
+    // Ensure the plugin data is normalized first
+    $plugin = repo_man_normalize_plugin_data( $plugin );
+
+    return [
+        'name'              => esc_html( $plugin['name'] ),
+        'slug'              => esc_attr( $plugin['slug'] ),
+        'author'            => esc_html( $plugin['author'] ),
+        'author_profile'    => esc_url( $plugin['author_url'] ),
+        'version'           => esc_html( $plugin['version'] ),
+        'rating'            => intval( $plugin['rating'] ) * 20, // Convert rating to a percentage
+        'num_ratings'       => intval( $plugin['num_ratings'] ),
+        'homepage'          => esc_url( $plugin['url'] ),
+        'download_link'     => esc_url( $plugin['url'] ),
+        'last_updated'      => esc_html( $plugin['last_updated'] ),
+        'active_installs'   => intval( $plugin['active_installs'] ),
+        'short_description' => esc_html( $plugin['description'] ),
+        'icons'             => [
+            'default' => esc_url( $plugin['icon_url'] ),
+        ],
+    ];
 }
 
 // Fetch plugin data with caching via transients, only define once
@@ -275,20 +282,12 @@ add_action( 'wp_ajax_nopriv_plugin_install_repos_search', 'repo_man_handle_repos
 
 function repo_man_handle_repos_search() {
     // Sanitize the search term
-    $search_term = isset( $_POST['s'] ) ? sanitize_text_field( $_POST['s'] ) : '';
+    $search_term = isset( $_POST['s'] ) ? sanitize_textarea_field( $_POST['s'] ) : '';
 
     // Verify nonce for security
     if ( ! isset( $_POST['repo_man_nonce'] ) || ! wp_verify_nonce( $_POST['repo_man_nonce'], 'repo_man_nonce_action' ) ) {
         wp_send_json_error( array( 'message' => __( 'Invalid nonce verification', 'repo-man' ) ) );
         wp_die();
-    }
-
-    // Load required classes and functions
-    if ( ! class_exists( 'WP_Plugin_Install_List_Table' ) ) {
-        require_once ABSPATH . 'wp-admin/includes/class-wp-plugin-install-list-table.php';
-    }
-    if ( ! function_exists( 'wp_get_plugin_action_button' ) ) {
-        require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
     }
 
     // Fetch Repo Man plugins from JSON
