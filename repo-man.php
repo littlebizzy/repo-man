@@ -89,7 +89,7 @@ function repo_man_display_repos_plugins() {
 add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
 function repo_man_extend_search_results( $res, $action, $args ) {
     // Return early if not searching for plugins
-    if ( 'query_plugins' !== $action || empty( $args->search ) ) {
+    if ( 'query_plugins' !== $action || ! isset( $args->search ) || empty( $args->search ) ) {
         return $res;
     }
 
