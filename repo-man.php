@@ -225,18 +225,27 @@ if ( ! function_exists( 'repo_man_get_plugins_data_with_cache' ) ) {
 if ( ! function_exists( 'repo_man_get_plugins_data' ) ) {
     function repo_man_get_plugins_data() {
         $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
-        if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || strpos( $file, ABSPATH ) !== 0 || ! is_readable( $file ) ) {
+        
+        // Check if file exists and is readable
+        if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || ! is_readable( $file ) ) {
             return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
         }
 
+        // Read the file contents
         $content = file_get_contents( $file );
         if ( false === $content ) {
             return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
         }
 
+        // Decode the JSON content
         $plugins = json_decode( $content, true );
         if ( json_last_error() !== JSON_ERROR_NONE ) {
             return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
+        }
+
+        // Check if the file is empty or contains no data
+        if ( empty( $plugins ) ) {
+            return new WP_Error( 'file_empty', __( 'Error: The plugin-repos.json file is empty or contains no plugins.', 'repo-man' ) );
         }
 
         return $plugins;
