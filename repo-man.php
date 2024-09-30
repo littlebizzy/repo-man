@@ -86,7 +86,7 @@ function repo_man_display_repos_plugins() {
     $plugin_list_table->display();
 }
 
-// Extend the search results to include plugins from the JSON file and place them first
+// Extend the search results to include plugins from the JSON file and prioritize them when relevant
 add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
 function repo_man_extend_search_results( $res, $action, $args ) {
     // Return early if not searching for plugins
@@ -111,23 +111,44 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     // Normalize the plugins data
     $plugins = array_map( 'repo_man_normalize_plugin_data', $plugins );
 
-    // Step 1: Check for an exact match of the full search term in the name or description
+    // Step 1: Exact match of the full search term in the name or description (priority)
     $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
         return stripos( $plugin['name'], $search_query ) !== false || stripos( $plugin['description'], $search_query ) !== false;
     });
 
-    // Step 2: If no exact match, fallback to individual word matching
+    // Step 2: If no exact match, fallback to word-based matching
     if ( empty( $matching_plugins ) ) {
+        // Try to find plugins that match ALL search terms (AND logic)
         $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_terms ) {
-            return array_reduce( $search_terms, function( $carry, $term ) use ( $plugin ) {
-                return $carry || ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false );
-            }, false );
+            foreach ( $search_terms as $term ) {
+                if ( stripos( $plugin['name'], $term ) === false && stripos( $plugin['description'], $term ) === false ) {
+                    return false; // If one term doesn't match, skip this plugin
+                }
+            }
+            return true;
         });
+
+        // If no plugins match all terms, fallback to partial matches (OR logic)
+        if ( empty( $matching_plugins ) ) {
+            $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_terms ) {
+                foreach ( $search_terms as $term ) {
+                    if ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false ) {
+                        return true; // Return plugins matching at least one term
+                    }
+                }
+                return false;
+            });
+        }
     }
 
-    // If no matching plugins are found, return the original results
-    if ( empty( $matching_plugins ) ) {
-        return $res;
+    // Step 3: Boost relevance of matching plugins from the JSON data
+    if ( ! empty( $matching_plugins ) ) {
+        $json_plugins = array_filter( $matching_plugins, function( $plugin ) {
+            return isset( $plugin['source'] ) && $plugin['source'] === 'json'; // Assuming your JSON plugins have a 'source' key
+        });
+
+        // Boost JSON plugins by placing them at the top of the results
+        $matching_plugins = array_merge( $json_plugins, $matching_plugins );
     }
 
     // Format each matching plugin for WordPress's expected structure
