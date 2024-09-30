@@ -167,7 +167,7 @@ function repo_man_render_plugin_card( $plugin ) {
             <div class="vers column-rating">
                 <div class="star-rating">
                     <span class="screen-reader-text"><?php echo esc_html( $plugin['rating'] ); ?> rating based on <?php echo esc_html( $plugin['ratings_count'] ); ?> ratings</span>
-                    <?php echo repo_man_display_star_rating( $plugin['rating'] ); ?>
+                    <?php // echo repo_man_display_star_rating( $plugin['rating'] ); ?>
                 </div>
                 <span class="num-ratings" aria-hidden="true">(<?php echo esc_html( $plugin['ratings_count'] ); ?>)</span>
             </div>
@@ -239,33 +239,6 @@ function repo_man_display_admin_notice( $message ) {
         <p><strong><?php echo esc_html( $message ); ?></strong></p>
     </div>
     <?php
-}
-
-// Function to display star ratings
-function repo_man_display_star_rating( $rating ) {
-    // Ensure $rating is sanitized
-    $rating = floatval( $rating );
-    $full_stars = floor( $rating );
-    $half_star = ( $rating - $full_stars ) >= 0.5;
-    $html = [];
-
-    // Add full stars
-    for ( $i = 0; $i < $full_stars; $i++ ) {
-        $html[] = '<div class="star star-full" aria-hidden="true"></div>';
-    }
-
-    // Add half star if applicable
-    if ( $half_star ) {
-        $html[] = '<div class="star star-half" aria-hidden="true"></div>';
-    }
-
-    // Add empty stars
-    $empty_stars = 5 - $full_stars - ($half_star ? 1 : 0);
-    for ( $i = 0; $i < $empty_stars; $i++ ) {
-        $html[] = '<div class="star star-empty" aria-hidden="true"></div>';
-    }
-
-    return implode( '', $html );
 }
 
 // Extend the search results to include plugins from the JSON file and prioritize them when relevant
