@@ -24,13 +24,14 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 }, 999 );
 
 // Add the Repos tab and adjust its position based on search activity
+// Priority 12 is used to ensure it loads after the Plugin Blacklist plugin
 add_filter( 'install_plugins_tabs', 'repo_man_adjust_repos_tab_position', 12 );
 function repo_man_adjust_repos_tab_position( $tabs ) {
     // Define the "Public Repos" tab
     $public_repos_tab = array( 'repos' => _x( 'Public Repos', 'Tab title', 'repo-man' ) );
 
     // Check if a search query is active, sanitize the input
-    if ( ! empty( $_GET['s'] ) && ! is_null( sanitize_text_field( $_GET['s'] ) ) ) {
+    if ( ! empty( sanitize_text_field( $_GET['s'] ) ) ) {
         // Place "Public Repos" tab after the Search Results tab
         return array_merge( array_slice( $tabs, 0, 1 ), $public_repos_tab, array_slice( $tabs, 1 ) );
     }
