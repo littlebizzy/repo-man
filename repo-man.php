@@ -42,45 +42,46 @@ function repo_man_adjust_repos_tab_position( $tabs ) {
 // Display content for the Repos tab using native plugin list rendering
 add_action( 'install_plugins_repos', 'repo_man_display_repos_plugins', 12 );
 function repo_man_display_repos_plugins() {
+    // Fetch cached plugin data
     $plugins = repo_man_get_plugins_data_with_cache();
     $plugins_per_page = 36;
 
-    // Display error message if plugins data retrieval fails
+    // Handle error when fetching plugins data
     if ( is_wp_error( $plugins ) ) {
-        repo_man_display_admin_notice( $plugins->get_error_message() );
+        repo_man_display_admin_notice( esc_html( $plugins->get_error_message() ) );
         return;
     }
 
-    // Handle pagination
-    $paged = max( 1, intval( $_GET['paged'] ?? 1 ) );
+    // Get current page number, defaulting to 1 if not provided, and sanitize input
+    $paged = max( 1, absint( sanitize_text_field( $_GET['paged'] ?? 1 ) ) );
     $total_plugins = count( $plugins );
     $total_pages = ceil( $total_plugins / $plugins_per_page );
     $offset = ( $paged - 1 ) * $plugins_per_page;
 
-    // Paginate plugins
+    // Paginate the plugins array
     $paged_plugins = array_slice( $plugins, $offset, $plugins_per_page );
 
-    // If no plugins are found, show a message
+    // Display message if no plugins found
     if ( empty( $paged_plugins ) ) {
         echo '<p>' . esc_html__( 'No plugins available to display.', 'repo-man' ) . '</p>';
         return;
     }
 
-    // Prepare the plugins for display
+    // Prepare each plugin for display (assuming this handles escaping)
     $paged_plugins = array_map( 'repo_man_prepare_plugin_for_display', $paged_plugins );
 
-    // Use WordPress's native plugin list rendering to display the plugins
+    // Instantiate the WP_Plugin_Install_List_Table class
     $plugin_list_table = new WP_Plugin_Install_List_Table();
     $plugin_list_table->items = $paged_plugins;
 
-    // Set pagination
+    // Set pagination arguments for the list table
     $plugin_list_table->set_pagination_args( [
         'total_items' => $total_plugins,
         'per_page'    => $plugins_per_page,
         'total_pages' => $total_pages,
     ]);
 
-    // Output the list table
+    // Display the plugin list table
     $plugin_list_table->display();
 }
 
