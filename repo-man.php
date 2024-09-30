@@ -27,16 +27,16 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
 add_filter( 'install_plugins_tabs', 'repo_man_adjust_repos_tab_position', 12 );
 function repo_man_adjust_repos_tab_position( $tabs ) {
     // Define the "Public Repos" tab
-    $repos_tab = array( 'repos' => _x( 'Public Repos', 'Tab title', 'repo-man' ) );
+    $public_repos_tab = array( 'repos' => _x( 'Public Repos', 'Tab title', 'repo-man' ) );
 
-    // Check if the Search Results tab should be first (active search)
-    if ( isset( $_GET['s'] ) && ! empty( $_GET['s'] ) ) {
-        // Ensure Search Results is first, then Public Repos, then the rest
-        return array_merge( array_slice( $tabs, 0, 1 ), $repos_tab, array_slice( $tabs, 1 ) );
+    // Check if a search query is active, sanitize the input
+    if ( ! empty( $_GET['s'] ) && ! is_null( sanitize_text_field( $_GET['s'] ) ) ) {
+        // Place "Public Repos" tab after the Search Results tab
+        return array_merge( array_slice( $tabs, 0, 1 ), $public_repos_tab, array_slice( $tabs, 1 ) );
     }
 
     // Prepend "Public Repos" as the first tab when no search is active
-    return array_merge( $repos_tab, $tabs );
+    return array_merge( $public_repos_tab, $tabs );
 }
 
 // Display content for the Repos tab using native plugin list rendering
