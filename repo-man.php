@@ -31,7 +31,7 @@ function repo_man_adjust_repos_tab_position( $tabs ) {
     $public_repos_tab = array( 'repos' => _x( 'Public Repos', 'Tab title', 'repo-man' ) );
 
     // Check if a search query is active, sanitize the input
-    if ( ! empty( sanitize_text_field( $_GET['s'] ) ) ) {
+    if ( isset( $_GET['s'] ) && ! empty( sanitize_text_field( $_GET['s'] ) ) ) {
         // Place "Public Repos" tab after the Search Results tab
         return array_merge( array_slice( $tabs, 0, 1 ), $public_repos_tab, array_slice( $tabs, 1 ) );
     }
