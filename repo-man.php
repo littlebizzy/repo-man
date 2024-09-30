@@ -167,11 +167,11 @@ function repo_man_normalize_plugin_data( $plugin ) {
         'name'              => _x( 'Unknown Plugin', 'Default plugin name', 'repo-man' ),
         'slug'              => 'unknown-slug',
         'author'            => _x( 'Unknown Author', 'Default author name', 'repo-man' ),
-        'author_url'        => '#',
+        'author_url'        => '',
         'version'           => '1.0.0',
         'rating'            => 0,
         'num_ratings'       => 0,
-        'url'               => '#',
+        'url'               => '',
         'last_updated'      => _x( 'Unknown', 'Default last updated', 'repo-man' ),
         'active_installs'   => 0,
         'description'       => _x( 'No description available.', 'Default description', 'repo-man' ),
@@ -189,17 +189,20 @@ function repo_man_prepare_plugin_for_display( $plugin ) {
         'name'              => esc_html( $plugin['name'] ),
         'slug'              => esc_attr( $plugin['slug'] ),
         'author'            => esc_html( $plugin['author'] ),
-        'author_profile'    => esc_url( $plugin['author_url'] ),
+        // Only add the author profile link if a valid URL is provided, otherwise return an empty string
+        'author_profile'    => ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '',
         'version'           => esc_html( $plugin['version'] ),
         'rating'            => intval( $plugin['rating'] ) * 20, // Convert rating to a percentage
         'num_ratings'       => intval( $plugin['num_ratings'] ),
-        'homepage'          => esc_url( $plugin['url'] ),
-        'download_link'     => esc_url( $plugin['url'] ),
+        // Only add the homepage and download link if a valid URL is provided, otherwise return an empty string
+        'homepage'          => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
+        'download_link'     => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
         'last_updated'      => esc_html( $plugin['last_updated'] ),
         'active_installs'   => intval( $plugin['active_installs'] ),
         'short_description' => esc_html( $plugin['description'] ),
         'icons'             => [
-            'default' => esc_url( $plugin['icon_url'] ),
+            // Return an empty string if no icon URL is available
+            'default' => ! empty( $plugin['icon_url'] ) ? esc_url( $plugin['icon_url'] ) : '',
         ],
     ];
 }
