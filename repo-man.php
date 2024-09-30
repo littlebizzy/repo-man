@@ -94,7 +94,7 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     }
 
     // Sanitize the search query, preserving spaces
-    $search_query = sanitize_textarea_field( $args->search );
+    $search_query = sanitize_text_field( $args->search );
 
     // Split the search query into individual words
     $search_terms = array_filter( explode( ' ', $search_query ) );
@@ -110,7 +110,7 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     // Normalize the plugins data
     $plugins = array_map( 'repo_man_normalize_plugin_data', $plugins );
 
-    // Step 1: First, check for an exact match of the full search term in the name or description
+    // Step 1: Check for an exact match of the full search term in the name or description
     $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_query ) {
         return stripos( $plugin['name'], $search_query ) !== false || stripos( $plugin['description'], $search_query ) !== false;
     });
@@ -118,12 +118,9 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     // Step 2: If no exact match, fallback to individual word matching
     if ( empty( $matching_plugins ) ) {
         $matching_plugins = array_filter( $plugins, function( $plugin ) use ( $search_terms ) {
-            foreach ( $search_terms as $term ) {
-                if ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false ) {
-                    return true;
-                }
-            }
-            return false;
+            return array_reduce( $search_terms, function( $carry, $term ) use ( $plugin ) {
+                return $carry || ( stripos( $plugin['name'], $term ) !== false || stripos( $plugin['description'], $term ) !== false );
+            }, false );
         });
     }
 
