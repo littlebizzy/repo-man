@@ -68,9 +68,10 @@ function repo_man_display_repos_plugins() {
     // Display a description for the Repos tab
     echo '<p>' . esc_html__( 'These are hand-picked WordPress plugins hosted on public repositories, including GitHub, GitLab, and beyond.', 'repo-man' ) . '</p>';
 
-    // Start the form for filtering and pagination
+    // Start the form for filtering and pagination, including nonce for security
     ?>
     <form id="plugin-filter" method="post">
+        <?php wp_nonce_field( 'repo_man_pagination', 'repo_man_nonce' ); ?>
         <input type="hidden" name="_wp_http_referer" value="<?php echo esc_attr( $_SERVER['REQUEST_URI'] ); ?>">
 
         <?php
@@ -131,14 +132,14 @@ function repo_man_render_pagination( $paged, $total_plugins, $total_pages, $posi
     <?php
 }
 
-// Function to render each plugin card
+// Function to render each plugin card with improved security and escaping
 function repo_man_render_plugin_card( $plugin ) {
     ?>
     <div class="plugin-card plugin-card-<?php echo esc_attr( sanitize_title( $plugin['slug'] ) ); ?>">
         <div class="plugin-card-top">
             <div class="name column-name">
                 <h3>
-                    <a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal">
+                    <a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal" rel="noopener noreferrer">
                         <?php echo esc_html( $plugin['name'] ); ?>
                         <?php if ( ! empty( $plugin['icon_url'] ) ) : ?>
                             <img src="<?php echo esc_url( $plugin['icon_url'] ); ?>" class="plugin-icon" alt="<?php echo esc_attr( $plugin['name'] ); ?>">
@@ -148,15 +149,15 @@ function repo_man_render_plugin_card( $plugin ) {
             </div>
             <div class="action-links">
                 <ul class="plugin-action-buttons">
-                    <li><a class="button" href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" target="_blank"><?php esc_html_e( 'View on GitHub', 'repo-man' ); ?></a></li>
-                    <li><a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal"><?php esc_html_e( 'More Details', 'repo-man' ); ?></a></li>
+                    <li><a class="button" href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View on GitHub', 'repo-man' ); ?></a></li>
+                    <li><a href="<?php echo ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '#'; ?>" class="thickbox open-plugin-details-modal" rel="noopener noreferrer"><?php esc_html_e( 'More Details', 'repo-man' ); ?></a></li>
                 </ul>
             </div>
             <div class="desc column-description">
                 <p><?php echo esc_html( $plugin['description'] ); ?></p>
                 <p class="authors">
                     <cite><?php esc_html_e( 'By', 'repo-man' ); ?>
-                        <a href="<?php echo ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '#'; ?>">
+                        <a href="<?php echo ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '#'; ?>" rel="noopener noreferrer">
                             <?php echo esc_html( $plugin['author'] ); ?>
                         </a>
                     </cite>
@@ -372,37 +373,6 @@ if ( ! function_exists( 'repo_man_get_plugins_data_with_cache' ) ) {
                 set_transient( 'repo_man_plugins', $plugins, HOUR_IN_SECONDS );
             }
         }
-        return $plugins;
-    }
-}
-
-// Fetch plugin data securely and with fallback handling, only define once
-if ( ! function_exists( 'repo_man_get_plugins_data' ) ) {
-    function repo_man_get_plugins_data() {
-        $file = realpath( plugin_dir_path( __FILE__ ) . 'plugin-repos.json' );
-        
-        // Check if file exists and is readable
-        if ( ! $file || strpos( $file, plugin_dir_path( __FILE__ ) ) !== 0 || ! is_readable( $file ) ) {
-            return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
-        }
-
-        // Read the file contents
-        $content = file_get_contents( $file );
-        if ( false === $content ) {
-            return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
-        }
-
-        // Decode the JSON content
-        $plugins = json_decode( $content, true );
-        if ( json_last_error() !== JSON_ERROR_NONE ) {
-            return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
-        }
-
-        // Check if the file is empty or contains no data
-        if ( empty( $plugins ) ) {
-            return new WP_Error( 'file_empty', __( 'Error: The plugin-repos.json file is empty or contains no plugins.', 'repo-man' ) );
-        }
-
         return $plugins;
     }
 }
