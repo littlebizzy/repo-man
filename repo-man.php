@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.2.2
+Version: 1.2.3
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -251,7 +251,7 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     }
 
     // Sanitize the search query, preserving spaces
-    $search_query = sanitize_text_field( $args->search );
+    $search_query = sanitize_text_field( urldecode( $args->search ) );
 
     // Split the search query into individual words
     $search_terms = array_filter( explode( ' ', $search_query ) );
