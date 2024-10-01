@@ -4,6 +4,12 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.2.2 
+- Public Repos tab position is now dynamic depending on Search Results tab being active or not
+- various minor security enhancements
+- minor translation enhancements
+- transitional release to prepare for 1.3.0 changes
+
 ### 1.2.1
 - changed 3 actions/filters to use priority `12`
 
