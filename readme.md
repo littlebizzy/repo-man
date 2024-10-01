@@ -4,6 +4,9 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.2.3
+- added `urldecode()` inside the `repo_man_extend_search_results` function
+
 ### 1.2.2 
 - Public Repos tab position is now dynamic depending on Search Results tab being active or not
 - various minor security enhancements
