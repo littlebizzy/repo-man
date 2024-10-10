@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.2.3
+Version: 1.2.4
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -48,7 +48,7 @@ function repo_man_display_repos_plugins() {
 
     // Display error message if plugins data retrieval fails
     if ( is_wp_error( $plugins ) ) {
-        repo_man_display_admin_notice( $plugins->get_error_message() );
+        repo_man_display_admin_notice( wp_kses_post( $plugins->get_error_message() ) );
         return;
     }
 
@@ -229,7 +229,7 @@ function repo_man_get_plugins_data() {
         $plugin['compatible'] = $plugin['compatible'] ?? false;
     }
 
-    // Return the cleaned up plugins array
+    // Return the cleaned-up plugins array
     return $plugins;
 }
 
@@ -237,7 +237,7 @@ function repo_man_get_plugins_data() {
 function repo_man_display_admin_notice( $message ) {
     ?>
     <div class="notice notice-error">
-        <p><strong><?php echo esc_html( $message ); ?></strong></p>
+        <p><strong><?php echo wp_kses_post( $message ); ?></strong></p>
     </div>
     <?php
 }
