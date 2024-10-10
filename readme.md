@@ -4,6 +4,12 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.3.0
+- simplified approach focused on plugin search results only (removed Public Repos tab)
+- greatly improved search query matching rules with new scoring function
+- tweaked logic for plugin data normalization and sanitizing
+- added textdomain `repo-man` for translation support
+
 ### 1.2.4
 - added error handling in case of empty `plugin-repos.json` file
 - added/changed to `wp_kses_post()` from `esc_html()` for admin notices
