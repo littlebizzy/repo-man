@@ -168,7 +168,6 @@ function repo_man_render_plugin_card( $plugin ) {
             <div class="vers column-rating">
                 <div class="star-rating">
                     <span class="screen-reader-text"><?php echo esc_html( $plugin['rating'] ); ?> rating based on <?php echo esc_html( $plugin['ratings_count'] ); ?> ratings</span>
-                    <?php // echo repo_man_display_star_rating( $plugin['rating'] ); ?>
                 </div>
                 <span class="num-ratings" aria-hidden="true">(<?php echo esc_html( $plugin['ratings_count'] ); ?>)</span>
             </div>
@@ -211,6 +210,11 @@ function repo_man_get_plugins_data() {
     // Handle JSON decoding errors
     if ( json_last_error() !== JSON_ERROR_NONE ) {
         return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
+    }
+
+    // Check if the file is empty or contains no data (new error handling from 1.3.0)
+    if ( empty( $plugins ) ) {
+        return new WP_Error( 'file_empty', __( 'Error: The plugin-repos.json file is empty or contains no plugins.', 'repo-man' ) );
     }
 
     // Ensure each plugin has the required keys with default values as fallback
