@@ -4,6 +4,10 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.2.4
+- added error handling in case of empty `plugin-repos.json` file
+- added/changed to `wp_kses_post()` from `esc_html()` for admin notices
+
 ### 1.2.3
 - added `urldecode()` inside the `repo_man_extend_search_results` function
 
