@@ -8,6 +8,7 @@ Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: repo-man
 GitHub Plugin URI: littlebizzy/repo-man
 Primary Branch: master
 */
@@ -22,6 +23,12 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
     $overrides[] = 'repo-man/repo-man.php';
     return $overrides;
 }, 999 );
+
+// load plugin textdomain for translations
+function repo_man_load_textdomain() {
+    load_plugin_textdomain( 'repo-man', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+}
+add_action( 'plugins_loaded', 'repo_man_load_textdomain' );
 
 // fetch plugin data from json file with secure handling and fallback for missing keys
 function repo_man_get_plugins_data() {
