@@ -9,6 +9,8 @@ Author URI: https://www.littlebizzy.com
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain: repo-man
+GitHub Plugin URI: littlebizzy/repo-man
+Primary Branch: master
 */
 
 // Prevent direct access
