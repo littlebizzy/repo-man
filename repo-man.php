@@ -3,22 +3,20 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.3.0
+Version: 1.4.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain: repo-man
-GitHub Plugin URI: littlebizzy/repo-man
-Primary Branch: master
 */
 
-// Prevent direct access
+// prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Disable WordPress.org updates for this plugin
+// disable wordpress.org updates for this plugin
 add_filter( 'gu_override_dot_org', function( $overrides ) {
     $overrides[] = 'repo-man/repo-man.php';
     return $overrides;
@@ -150,6 +148,114 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     return $res;
 }
 
+// filter the plugin installation source to handle github repositories
+add_filter( 'upgrader_source_selection', 'repo_man_handle_github_source', 10, 4 );
+function repo_man_handle_github_source( $source, $remote_source, $upgrader, $hook_extra ) {
+    if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
+        // the plugin folder might have a "-master" or "-tag" suffix; rename it to match the slug
+        $desired_slug = $hook_extra['repo_man_slug'];
+        $source_slug  = basename( $source );
+        if ( $source_slug !== $desired_slug ) {
+            $new_source = trailingslashit( dirname( $source ) ) . $desired_slug;
+            if ( ! rename( $source, $new_source ) ) {
+                return new WP_Error( 'rename_failed', __( 'Could not rename plugin directory.', 'repo-man' ) );
+            }
+            return $new_source;
+        }
+    }
+    return $source;
+}
+
+// handle plugin installation from github repositories
+add_filter( 'plugins_api', 'repo_man_plugins_api_handler', 99, 3 );
+
+function repo_man_plugins_api_handler( $result, $action, $args ) {
+    if ( 'plugin_information' !== $action ) {
+        return $result;
+    }
+
+    // fetch plugins data
+    $plugins = repo_man_get_plugins_data_with_cache();
+
+    if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
+        return $result;
+    }
+
+    // find the plugin by slug
+    foreach ( $plugins as $plugin ) {
+        if ( $plugin['slug'] === $args->slug ) {
+            // prepare plugin information
+            $plugin_info = repo_man_prepare_plugin_information( $plugin );
+            return $plugin_info;
+        }
+    }
+
+    return $result;
+}
+
+// prepare plugin information for the plugin installer
+function repo_man_prepare_plugin_information( $plugin ) {
+    $download_link = repo_man_get_plugin_download_link( $plugin );
+
+    $plugin_data = array(
+        'id'                => $plugin['slug'],
+		'type'              => 'plugin',
+        'name'                  => $plugin['name'],
+        'slug'                  => $plugin['slug'],
+        'version'               => $plugin['version'],
+        'author'                => wp_kses_post( $plugin['author'] ),
+        'author_profile'        => $plugin['author_url'],
+        'requires'              => '5.0',
+        'tested'                => get_bloginfo( 'version' ),
+        'requires_php'          => '7.0',
+        'sections'              => array(
+            'description' => wp_kses_post( $plugin['description'] ),
+        ),
+        'download_link'         => $download_link,
+        'package'               => $download_link,
+        'trunk'                 => $plugin['url'],
+        'last_updated'          => sanitize_text_field( $plugin['last_updated'] ),
+        'homepage'              => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
+        'short_description'     => wp_kses_post( $plugin['description'] ),
+        'icons'                 => array(
+            'default' => ! empty( $plugin['icon_url'] ) ? esc_url( $plugin['icon_url'] ) : '',
+        ),
+        'external'              => false,
+    );
+
+    return (object) $plugin_data;
+}
+
+// get the download link for the plugin from github
+function repo_man_get_plugin_download_link( $plugin ) {
+    if ( empty( $plugin['url'] ) ) {
+        error_log( 'repo man error: repository url is empty for plugin ' . $plugin['slug'] );
+        return '';
+    }
+
+    // check if the repository is a github repository
+    if ( false === strpos( $plugin['url'], 'github.com' ) ) {
+        return $plugin['url'];
+    }
+
+    // extract the owner and repo name from the github url
+    $parsed_url = parse_url( $plugin['url'] );
+    $path_parts = explode( '/', trim( $parsed_url['path'], '/' ) );
+
+    if ( count( $path_parts ) < 2 ) {
+        error_log( 'repo man error: invalid github repository url for plugin ' . $plugin['slug'] );
+        return '';
+    }
+
+    $owner = $path_parts[0];
+    $repo  = $path_parts[1];
+
+    // use the master branch zip url
+    $download_link = "https://github.com/{$owner}/{$repo}/archive/refs/heads/master.zip";
+
+    return esc_url_raw( $download_link );
+}
+
 // calculate match score based on search query
 function repo_man_calculate_match_score( $plugin, $search_query ) {
     $score = 0;
@@ -171,7 +277,7 @@ function repo_man_calculate_match_score( $plugin, $search_query ) {
         $score += 50;
     }
 
-    // exact match of search query with plugin slug
+    // exact match of search query in plugin slug
     if ( $plugin_slug === sanitize_title( $search_query ) ) {
         $score += 80;
     }
@@ -230,8 +336,13 @@ function repo_man_prepare_plugin_for_display( $plugin ) {
     // ensure plugin data is normalized first
     $plugin = repo_man_normalize_plugin_data( $plugin );
 
+    // get the download link
+    $download_link = repo_man_get_plugin_download_link( $plugin );
+
     // sanitize and escape plugin data
     return array(
+        'id'                => $plugin['slug'],
+		'type'              => 'plugin',
         'name'              => sanitize_text_field( $plugin['name'] ),
         'slug'              => sanitize_title( $plugin['slug'] ),
         'version'           => sanitize_text_field( $plugin['version'] ),
@@ -250,7 +361,8 @@ function repo_man_prepare_plugin_for_display( $plugin ) {
         'sections'          => array(
             'description' => wp_kses_post( $plugin['description'] ),
         ),
-        'download_link'     => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
+        'download_link'     => $download_link,
+        'downloaded'        => true,
         'homepage'          => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
         'tags'              => array(),
         'donate_link'       => '',
@@ -261,20 +373,47 @@ function repo_man_prepare_plugin_for_display( $plugin ) {
         'banners_rtl'       => array(),
         'last_updated'      => sanitize_text_field( $plugin['last_updated'] ),
         'added'             => '',
-        'external'          => true,
+        'external'          => false,
+        'package'           => $download_link,
     );
 }
 
-// fetch plugin data via transients
+// fetch plugin data with caching via transients
 function repo_man_get_plugins_data_with_cache() {
     $plugins = get_transient( 'repo_man_plugins' );
     if ( false === $plugins ) {
         $plugins = repo_man_get_plugins_data();
         if ( ! is_wp_error( $plugins ) ) {
             set_transient( 'repo_man_plugins', $plugins, HOUR_IN_SECONDS );
+        } else {
+            error_log( 'repo man error: ' . $plugins->get_error_message() );
         }
     }
     return $plugins;
+}
+
+// ensure the "activate" button appears after installation
+add_filter('upgrader_post_install', 'repo_man_plugin_activate_button', 10, 3);
+function repo_man_plugin_activate_button( $response, $hook_extra, $result ) {
+    // check if it's a plugin installation request from repo man
+    if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
+        // ensure wordpress recognizes the plugin directory
+        wp_clean_plugins_cache( true );
+        
+        // if the installation is successful, set the plugin as installed
+        $plugin_slug = isset( $hook_extra['repo_man_slug'] ) ? $hook_extra['repo_man_slug'] : '';
+        if ( $plugin_slug && ! is_wp_error( $result ) ) {
+            $plugin_file = "$plugin_slug/$plugin_slug.php";
+            
+            // check if the plugin file exists and activate the plugin
+            if ( file_exists( WP_PLUGIN_DIR . '/' . $plugin_file ) ) {
+                // activate the plugin immediately after installation
+                activate_plugin( $plugin_file );
+            }
+        }
+    }
+
+    return $response;
 }
 
 // Ref: ChatGPT
