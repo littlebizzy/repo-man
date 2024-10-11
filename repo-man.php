@@ -88,6 +88,34 @@ function repo_man_display_admin_notice( $message ) {
     <?php
 }
 
+add_filter( 'upgrader_source_selection', 'repo_man_force_rename_plugin_source', 10, 4 );
+function repo_man_force_rename_plugin_source( $source, $remote_source, $upgrader, $hook_extra ) {
+    if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
+        // expected slug from the JSON plugin repository
+        $desired_slug = isset( $hook_extra['repo_man_slug'] ) ? sanitize_title( $hook_extra['repo_man_slug'] ) : '';
+
+        // get the actual slug of the downloaded folder
+        $source_slug = basename( $source );
+
+        // check if the folder contains a suffix like '-master' or '-v1.0.0'
+        if ( $source_slug !== $desired_slug ) {
+            $new_source = trailingslashit( dirname( $source ) ) . $desired_slug;
+
+            // force rename the folder to match the slug
+            if ( rename( $source, $new_source ) ) {
+                // update the upgrader's internal reference to the new directory
+                $upgrader->skin->result['destination'] = $new_source;
+
+                return $new_source; // Return the new folder path if renamed successfully
+            } else {
+                return new WP_Error( 'rename_failed', __( 'Could not rename plugin directory.', 'repo-man' ) );
+            }
+        }
+    }
+
+    return $source; // Return the source as is if no renaming is needed
+}
+
 // extend search results to include plugins from the json file and prioritize them when relevant
 add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
 function repo_man_extend_search_results( $res, $action, $args ) {
@@ -402,35 +430,38 @@ function repo_man_get_plugins_data_with_cache() {
     return $plugins;
 }
 
-// ensure the "activate" button appears after installation
-add_filter( 'upgrader_post_install', 'repo_man_plugin_activate_button', 10, 3 );
-function repo_man_plugin_activate_button( $response, $hook_extra, $result ) {
+// ensure the "activate" button appears after installation and rename plugin folder if needed
+add_filter('upgrader_post_install', 'repo_man_plugin_rename_and_activate', 10, 3);
+function repo_man_plugin_rename_and_activate( $response, $hook_extra, $result ) {
     // check if it's a plugin installation request from repo man
     if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
         // ensure wordpress recognizes the plugin directory
         wp_clean_plugins_cache( true );
-        
-        // if the installation is successful, set the plugin as installed
+
         $plugin_slug = isset( $hook_extra['repo_man_slug'] ) ? $hook_extra['repo_man_slug'] : '';
         if ( $plugin_slug && ! is_wp_error( $result ) ) {
-            $plugin_file = "$plugin_slug/$plugin_slug.php";
+            $plugin_dir = WP_PLUGIN_DIR . '/' . $plugin_slug;
+            $source_dir = $result['destination']; // The extracted folder (likely with a suffix)
 
-            // check if the plugin file exists
-            if ( file_exists( WP_PLUGIN_DIR . '/' . $plugin_file ) ) {
+            // if the folder has a suffix like "-master", rename it to match the slug
+            if ( basename( $source_dir ) !== $plugin_slug ) {
+                $new_source = WP_PLUGIN_DIR . '/' . $plugin_slug;
 
-                // register the newly installed plugin to force activation option
-                $all_plugins = get_plugins();
-                if ( isset( $all_plugins[ $plugin_file ] ) ) {
-                    // activate the plugin immediately after installation
-                    activate_plugin( $plugin_file );
+                if ( rename( $source_dir, $new_source ) ) {
+                    $result['destination'] = $new_source; // Update the result to point to the renamed folder
 
-                    // force plugin re-registration and ensure UI updates correctly
+                    // update the plugin cache again after renaming
                     wp_clean_plugins_cache( true );
-                    wp_update_plugins(); // make sure plugins are updated
-
-                    // return response to ensure no errors are thrown
-                    return $response;
+                } else {
+                    return new WP_Error( 'rename_failed', __( 'Could not rename plugin directory.', 'repo-man' ) );
                 }
+            }
+
+            // check if the plugin file exists and activate the plugin
+            $plugin_file = "$plugin_slug/$plugin_slug.php";
+            if ( file_exists( WP_PLUGIN_DIR . '/' . $plugin_file ) ) {
+                // activate the plugin immediately after installation
+                activate_plugin( $plugin_file );
             }
         }
     }
