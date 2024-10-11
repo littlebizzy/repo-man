@@ -430,9 +430,9 @@ function repo_man_get_plugins_data_with_cache() {
     return $plugins;
 }
 
-// ensure the "activate" button appears after installation and rename plugin folder if needed
-add_filter('upgrader_post_install', 'repo_man_plugin_rename_and_activate', 10, 3);
-function repo_man_plugin_rename_and_activate( $response, $hook_extra, $result ) {
+// ensure the "activate" button appears after installation
+add_filter('upgrader_post_install', 'repo_man_plugin_activate', 10, 3);
+function repo_man_plugin_activate( $response, $hook_extra, $result ) {
     // check if it's a plugin installation request from repo man
     if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
         // ensure wordpress recognizes the plugin directory
@@ -440,23 +440,6 @@ function repo_man_plugin_rename_and_activate( $response, $hook_extra, $result ) 
 
         $plugin_slug = isset( $hook_extra['repo_man_slug'] ) ? $hook_extra['repo_man_slug'] : '';
         if ( $plugin_slug && ! is_wp_error( $result ) ) {
-            $plugin_dir = WP_PLUGIN_DIR . '/' . $plugin_slug;
-            $source_dir = $result['destination']; // The extracted folder (likely with a suffix)
-
-            // if the folder has a suffix like "-master", rename it to match the slug
-            if ( basename( $source_dir ) !== $plugin_slug ) {
-                $new_source = WP_PLUGIN_DIR . '/' . $plugin_slug;
-
-                if ( rename( $source_dir, $new_source ) ) {
-                    $result['destination'] = $new_source; // Update the result to point to the renamed folder
-
-                    // update the plugin cache again after renaming
-                    wp_clean_plugins_cache( true );
-                } else {
-                    return new WP_Error( 'rename_failed', __( 'Could not rename plugin directory.', 'repo-man' ) );
-                }
-            }
-
             // check if the plugin file exists and activate the plugin
             $plugin_file = "$plugin_slug/$plugin_slug.php";
             if ( file_exists( WP_PLUGIN_DIR . '/' . $plugin_file ) ) {
