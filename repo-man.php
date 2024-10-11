@@ -233,32 +233,35 @@ function repo_man_plugins_api_handler( $result, $action, $args ) {
 
 // prepare plugin information for the plugin installer
 function repo_man_prepare_plugin_information( $plugin ) {
+    // safely fetch version with fallback
+    $version = isset( $plugin['version'] ) ? sanitize_text_field( $plugin['version'] ) : '1.0.0';
+
     $download_link = repo_man_get_plugin_download_link( $plugin );
 
     $plugin_data = array(
         'id'                => $plugin['slug'],
-		'type'              => 'plugin',
-        'name'                  => $plugin['name'],
-        'slug'                  => $plugin['slug'],
-        'version'               => $plugin['version'],
-        'author'                => wp_kses_post( $plugin['author'] ),
-        'author_profile'        => $plugin['author_url'],
-        'requires'              => '5.0',
-        'tested'                => get_bloginfo( 'version' ),
-        'requires_php'          => '7.0',
-        'sections'              => array(
+        'type'              => 'plugin',
+        'name'              => sanitize_text_field( $plugin['name'] ),
+        'slug'              => sanitize_title( $plugin['slug'] ),
+        'version'           => $version,  // Fixing undefined key here
+        'author'            => wp_kses_post( $plugin['author'] ),
+        'author_profile'    => $plugin['author_url'],
+        'requires'          => '5.0',
+        'tested'            => get_bloginfo( 'version' ),
+        'requires_php'      => '7.0',
+        'sections'          => array(
             'description' => wp_kses_post( $plugin['description'] ),
         ),
-        'download_link'         => $download_link,
-        'package'               => $download_link,
-        'trunk'                 => $plugin['url'],
-        'last_updated'          => sanitize_text_field( $plugin['last_updated'] ),
-        'homepage'              => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
-        'short_description'     => wp_kses_post( $plugin['description'] ),
-        'icons'                 => array(
+        'download_link'     => $download_link,
+        'package'           => $download_link,
+        'trunk'             => $plugin['url'],
+        'last_updated'      => sanitize_text_field( $plugin['last_updated'] ),
+        'homepage'          => ! empty( $plugin['url'] ) ? esc_url( $plugin['url'] ) : '',
+        'short_description' => wp_kses_post( $plugin['description'] ),
+        'icons'             => array(
             'default' => ! empty( $plugin['icon_url'] ) ? esc_url( $plugin['icon_url'] ) : '',
         ),
-        'external'              => false,
+        'external'          => false,
     );
 
     return (object) $plugin_data;
