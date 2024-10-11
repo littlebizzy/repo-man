@@ -152,17 +152,27 @@ function repo_man_extend_search_results( $res, $action, $args ) {
 add_filter( 'upgrader_source_selection', 'repo_man_handle_github_source', 10, 4 );
 function repo_man_handle_github_source( $source, $remote_source, $upgrader, $hook_extra ) {
     if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
-        // the plugin folder might have a "-master" or "-tag" suffix; rename it to match the slug
+        // expected slug from the plugin repository
         $desired_slug = $hook_extra['repo_man_slug'];
-        $source_slug  = basename( $source );
+
+        // get the actual slug of the downloaded folder
+        $source_slug = basename( $source );
+
+        // check if the folder contains branch suffix (e.g., '-master' or '-v1.0.0')
         if ( $source_slug !== $desired_slug ) {
             $new_source = trailingslashit( dirname( $source ) ) . $desired_slug;
+
+            // rename the plugin folder
             if ( ! rename( $source, $new_source ) ) {
                 return new WP_Error( 'rename_failed', __( 'Could not rename plugin directory.', 'repo-man' ) );
             }
+            
+            // return the new folder path
             return $new_source;
         }
     }
+
+    // return the source as is if no renaming is needed
     return $source;
 }
 
@@ -393,7 +403,7 @@ function repo_man_get_plugins_data_with_cache() {
 }
 
 // ensure the "activate" button appears after installation
-add_filter('upgrader_post_install', 'repo_man_plugin_activate_button', 10, 3);
+add_filter( 'upgrader_post_install', 'repo_man_plugin_activate_button', 10, 3 );
 function repo_man_plugin_activate_button( $response, $hook_extra, $result ) {
     // check if it's a plugin installation request from repo man
     if ( isset( $hook_extra['repo_man_github'] ) && $hook_extra['repo_man_github'] ) {
@@ -404,11 +414,23 @@ function repo_man_plugin_activate_button( $response, $hook_extra, $result ) {
         $plugin_slug = isset( $hook_extra['repo_man_slug'] ) ? $hook_extra['repo_man_slug'] : '';
         if ( $plugin_slug && ! is_wp_error( $result ) ) {
             $plugin_file = "$plugin_slug/$plugin_slug.php";
-            
-            // check if the plugin file exists and activate the plugin
+
+            // check if the plugin file exists
             if ( file_exists( WP_PLUGIN_DIR . '/' . $plugin_file ) ) {
-                // activate the plugin immediately after installation
-                activate_plugin( $plugin_file );
+
+                // register the newly installed plugin to force activation option
+                $all_plugins = get_plugins();
+                if ( isset( $all_plugins[ $plugin_file ] ) ) {
+                    // activate the plugin immediately after installation
+                    activate_plugin( $plugin_file );
+
+                    // force plugin re-registration and ensure UI updates correctly
+                    wp_clean_plugins_cache( true );
+                    wp_update_plugins(); // make sure plugins are updated
+
+                    // return response to ensure no errors are thrown
+                    return $response;
+                }
             }
         }
     }
