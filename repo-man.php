@@ -13,62 +13,71 @@ GitHub Plugin URI: littlebizzy/repo-man
 Primary Branch: master
 */
 
-// Prevent direct access
+// prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Disable wordpress.org updates for this plugin
+// disable wordpress.org updates for this plugin
 add_filter( 'gu_override_dot_org', function( $overrides ) {
     $overrides[] = 'repo-man/repo-man.php';
     return $overrides;
 }, 999 );
 
-// Load plugin textdomain for translations
+// load plugin textdomain for translations
 function repo_man_load_textdomain() {
     load_plugin_textdomain( 'repo-man', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 add_action( 'plugins_loaded', 'repo_man_load_textdomain' );
 
-// Fetch plugin data from JSON file with secure handling and fallback for missing keys
+// fetch plugin data from json file with secure handling and fallback for missing keys
 function repo_man_get_plugins_data() {
+    // get the plugin directory path
     $plugin_dir = plugin_dir_path( __FILE__ );
-    $file       = realpath( $plugin_dir . 'plugin-repos.json' );
+    // resolve the full path of the json file
+    $file = realpath( $plugin_dir . 'plugin-repos.json' );
 
-    if ( ! $file || strpos( $file, realpath( $plugin_dir ) ) !== 0 || ! is_readable( $file ) ) {
-        return new WP_Error( 'file_missing', __( 'Error: The plugin-repos.json file is missing or unreadable.', 'repo-man' ) );
+    // check if the file exists and is within the plugin directory
+    if ( ! $file || strpos( $file, realpath( $plugin_dir ) ) !== 0 ) {
+        return new WP_Error( 'file_missing', __( 'error: the plugin-repos.json file is missing or outside the plugin directory', 'repo-man' ) );
     }
 
-    $content = file_get_contents( $file );
+    // attempt to read the json file content directly
+    $content = @file_get_contents( $file );
     if ( false === $content ) {
-        return new WP_Error( 'file_unreadable', __( 'Error: The plugin-repos.json file could not be read.', 'repo-man' ) );
+        return new WP_Error( 'file_unreadable', __( 'error: the plugin-repos.json file could not be read', 'repo-man' ) );
     }
 
+    // decode the json content
     $plugins = json_decode( $content, true );
 
+    // check for json decoding errors
     if ( json_last_error() !== JSON_ERROR_NONE ) {
-        return new WP_Error( 'file_malformed', sprintf( __( 'Error: The plugin-repos.json file is malformed (%s).', 'repo-man' ), json_last_error_msg() ) );
+        return new WP_Error( 'file_malformed', sprintf( __( 'error: the plugin-repos.json file is malformed (%s)', 'repo-man' ), json_last_error_msg() ) );
     }
 
+    // check if the decoded content is empty
     if ( empty( $plugins ) ) {
-        return new WP_Error( 'file_empty', __( 'Error: The plugin-repos.json file is empty or contains no plugins.', 'repo-man' ) );
+        return new WP_Error( 'file_empty', __( 'error: the plugin-repos.json file is empty or contains no plugins', 'repo-man' ) );
     }
 
+    // loop through plugins to set defaults and sanitize data
     foreach ( $plugins as &$plugin ) {
         $plugin['slug']            = isset( $plugin['slug'] ) ? sanitize_title( $plugin['slug'] ) : 'unknown-slug';
         $plugin['repo']            = isset( $plugin['repo'] ) ? sanitize_text_field( $plugin['repo'] ) : '';
-        $plugin['name']            = isset( $plugin['name'] ) ? sanitize_text_field( $plugin['name'] ) : __( 'Unknown Plugin', 'repo-man' );
+        $plugin['name']            = isset( $plugin['name'] ) ? sanitize_text_field( $plugin['name'] ) : __( 'unknown plugin', 'repo-man' );
         $plugin['icon_url']        = isset( $plugin['icon_url'] ) ? esc_url_raw( $plugin['icon_url'] ) : '';
-        $plugin['description']     = isset( $plugin['description'] ) ? wp_kses_post( $plugin['description'] ) : __( 'No description available.', 'repo-man' );
-        $plugin['author']          = isset( $plugin['author'] ) ? sanitize_text_field( $plugin['author'] ) : __( 'Unknown Author', 'repo-man' );
+        $plugin['description']     = isset( $plugin['description'] ) ? wp_kses_post( $plugin['description'] ) : __( 'no description available', 'repo-man' );
+        $plugin['author']          = isset( $plugin['author'] ) ? sanitize_text_field( $plugin['author'] ) : __( 'unknown author', 'repo-man' );
         $plugin['author_url']      = isset( $plugin['author_url'] ) ? esc_url_raw( $plugin['author_url'] ) : '#';
         $plugin['rating']          = isset( $plugin['rating'] ) ? intval( $plugin['rating'] ) : 0;
         $plugin['num_ratings']     = isset( $plugin['num_ratings'] ) ? intval( $plugin['num_ratings'] ) : 0;
-        $plugin['last_updated']    = isset( $plugin['last_updated'] ) ? sanitize_text_field( $plugin['last_updated'] ) : __( 'Unknown', 'repo-man' );
+        $plugin['last_updated']    = isset( $plugin['last_updated'] ) ? sanitize_text_field( $plugin['last_updated'] ) : __( 'unknown', 'repo-man' );
         $plugin['active_installs'] = isset( $plugin['active_installs'] ) ? intval( $plugin['active_installs'] ) : 0;
         $plugin['compatible']      = isset( $plugin['compatible'] ) ? (bool) $plugin['compatible'] : false;
     }
 
+    // return the plugin array
     return $plugins;
 }
 
