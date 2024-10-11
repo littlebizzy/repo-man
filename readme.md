@@ -4,6 +4,14 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.4.0
+- installing plugins directly from GitHub now supported based on the `repo` field in the `plugin-repos.json` file
+- GitHub repos will be automatically scanned for default, `master` and `main` fallback branches
+- `url` field in json data changed to `repo` field with owner/repo syntax
+- refined error handling if json file has parsing issues
+- plugin folders will be force renamed during installation to match `repo` field (if folder not exists)
+- various other code refactoring and cleanup
+
 ### 1.3.0
 - simplified approach focused on plugin search results only (removed Public Repos tab)
 - greatly improved search query matching rules with new scoring function
