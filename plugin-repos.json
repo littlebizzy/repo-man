@@ -7,10 +7,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/anonymous-bbpress",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 4.5,
-    "ratings_count": 30,
+    "rating": 4.8,
+    "ratings_count": 100,
     "active_installs": 5000,
-    "last_updated": "2023-07-10",
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -21,10 +21,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/clear-caches",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 4.7,
-    "ratings_count": 50,
-    "active_installs": 8000,
-    "last_updated": "2023-07-05",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -35,10 +35,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/disable-author-pages",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 4.6,
-    "ratings_count": 55,
-    "active_installs": 9000,
-    "last_updated": "2023-07-17",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -49,10 +49,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/disable-comments",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 5,
-    "ratings_count": 50,
-    "active_installs": 10000,
-    "last_updated": "2023-06-01",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -63,10 +63,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/disable-empty-trash",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 4.5,
-    "ratings_count": 40,
-    "active_installs": 6000,
-    "last_updated": "2023-06-20",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -78,9 +78,9 @@
     "repo": "littlebizzy/disable-feeds",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
     "rating": 4.8,
-    "ratings_count": 45,
-    "active_installs": 7000,
-    "last_updated": "2023-08-01",
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -91,10 +91,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/disable-gutenberg",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 5,
+    "rating": 4.8,
     "ratings_count": 100,
-    "active_installs": 15000,
-    "last_updated": "2023-08-15",
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -105,10 +105,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/disable-image-compression",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 5,
-    "ratings_count": 35,
-    "active_installs": 8000,
-    "last_updated": "2023-07-01",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -120,9 +120,9 @@
     "repo": "littlebizzy/disable-xml-rpc",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
     "rating": 4.8,
-    "ratings_count": 70,
-    "active_installs": 10000,
-    "last_updated": "2023-08-12",
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -133,10 +133,24 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/force-https",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 5,
-    "ratings_count": 85,
-    "active_installs": 11000,
-    "last_updated": "2023-06-29",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
+    "slug": "multisite-billing-manager",
+    "name": "Multisite Billing Manager",
+    "description": "Billing for Multisite networks",
+    "author": "LittleBizzy",
+    "author_url": "https://www.littlebizzy.com",
+    "repo": "littlebizzy/multisite-billing-manager",
+    "icon_url": "https://avatars.githubusercontent.com/u/10787477",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -147,10 +161,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/noindex-manager",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 4.9,
-    "ratings_count": 90,
-    "active_installs": 12000,
-    "last_updated": "2023-07-25",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   },
   {
@@ -161,10 +175,10 @@
     "author_url": "https://www.littlebizzy.com",
     "repo": "littlebizzy/statcounter",
     "icon_url": "https://avatars.githubusercontent.com/u/10787477",
-    "rating": 4,
-    "ratings_count": 60,
-    "active_installs": 7000,
-    "last_updated": "2023-05-18",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
     "compatible": true
   }
 ]
