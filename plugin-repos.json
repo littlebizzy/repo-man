@@ -154,6 +154,20 @@
     "compatible": true
   },
   {
+  "slug": "pressbooks",
+  "name": "Pressbooks",
+  "description": "Simple Book Production",
+  "author": "Pressbooks",
+  "author_url": "https://pressbooks.org",
+  "repo": "pressbooks/pressbooks",
+  "icon_url": "https://avatars.githubusercontent.com/u/4054717",
+  "rating": 4.8,
+  "ratings_count": 100,
+  "active_installs": 5000,
+  "last_updated": "2024-10-12",
+  "compatible": true
+},
+  {
     "slug": "noindex-manager",
     "name": "Noindex Manager",
     "description": "Noindex thin WordPress content",
@@ -180,5 +194,19 @@
     "active_installs": 5000,
     "last_updated": "2024-10-12",
     "compatible": true
-  }
+  },
+  {
+  "slug": "wp-sms",
+  "name": "WP SMS",
+  "description": "Ultimate SMS & MMS Notifications, 2FA, OTP, and Integrations with WooCommerce, GravityForms, and More",
+  "author": "WP SMS",
+  "author_url": "https://wp-sms-pro.com",
+  "repo": "wp-sms/wp-sms",
+  "icon_url": "https://avatars.githubusercontent.com/u/138309584",
+  "rating": 4.8,
+  "ratings_count": 100,
+  "active_installs": 5000,
+  "last_updated": "2024-10-12",
+  "compatible": true
+}
 ]
