@@ -4,6 +4,10 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.4.1
+- added Multisite Billing Manager plugin
+- tweaked dummy data in the json file for consistency
+
 ### 1.4.0
 - installing plugins directly from GitHub now supported based on the `repo` field in the `plugin-repos.json` file
 - GitHub repos will be automatically scanned for default, `master` and `main` fallback branches
