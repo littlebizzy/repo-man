@@ -182,6 +182,20 @@
     "compatible": true
   },
   {
+    "slug": "recrawler",
+    "name": "ReCrawler",
+    "description": "ReCrawler is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.",
+    "author": "Mikhail Kobzarev",
+    "author_url": "https://www.kobzarev.com",
+    "repo": "mihdan/recrawler",
+    "icon_url": "https://avatars.githubusercontent.com/u/666732",
+    "rating": 4.9,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
     "slug": "statcounter",
     "name": "StatCounter",
     "description": "Optimized StatCounter tracking",
