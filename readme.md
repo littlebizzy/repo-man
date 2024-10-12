@@ -4,8 +4,15 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.4.2
+- changed from 2-space to 4-space json indentation
+- added `pressbooks/pressbooks`
+- added `mihdan/recrawler`
+- added `WPCloudDeploy/wp-cloud-deploy`
+- added `wp-sms/wp-sms`
+
 ### 1.4.1
-- added Multisite Billing Manager plugin
+- added `littlebizzy/multisite-billing-manager`
 - tweaked dummy data in the json file for consistency
 
 ### 1.4.0
