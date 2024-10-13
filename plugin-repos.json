@@ -126,6 +126,20 @@
     "compatible": true
   },
   {
+  "slug": "dt-home",
+  "name": "DT Home",
+  "description": "An app home screen for Disciple.Tools. Part of the DT Toolbox.",
+  "author": "The Code Zone",
+  "author_url": "https://github.com/thecodezone",
+  "repo": "thecodezone/dt-home",
+  "icon_url": "https://avatars.githubusercontent.com/u/58779692",
+  "rating": 4.8,
+  "ratings_count": 100,
+  "active_installs": 5000,
+  "last_updated": "2024-10-12",
+  "compatible": true
+  },
+  {
     "slug": "force-https",
     "name": "Force HTTPS",
     "description": "HTTPS enforcement for WordPress",
