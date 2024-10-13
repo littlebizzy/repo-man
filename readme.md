@@ -55,7 +55,7 @@ Install public repos to WordPress
 - integrated json list into the native plugin search results (json list plugins should appear first)
 
 ### 1.1.1
-- added Disable Feeds plugin
+- added `littlebizzy/disable-feeds`
 - sorted `plugin-repos.json` in alphabetical order
 
 ### 1.1.0
