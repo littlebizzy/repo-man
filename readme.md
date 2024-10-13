@@ -4,6 +4,11 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.4.3
+- added `MisoAI/miso-wordpress-plugin`
+- added `pods-framework/pods`
+- added `thecodezone/dt-home`
+
 ### 1.4.2
 - changed from 2-space to 4-space json indentation
 - added `pressbooks/pressbooks`
