@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.4.3
+Version: 1.4.4
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
