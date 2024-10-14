@@ -14,6 +14,34 @@
     "compatible": true
   },
   {
+    "slug": "biscotti",
+    "name": "Biscotti",
+    "description": "Biscotti makes your user's login cookie a little bit longer.",
+    "author": "Jason Cosper",
+    "author_url": "https://jasoncosper.com",
+    "repo": "boogah/biscotti",
+    "icon_url": "https://avatars.githubusercontent.com/u/216056",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
+    "slug": "bowl",
+    "name": "Bowl",
+    "description": "Advanced CMS fields workflow on top of Wordplate for Wordpress.",
+    "author": "ZoulouX",
+    "author_url": "https://zouloux.com",
+    "repo": "zouloux/bowl",
+    "icon_url": "https://avatars.githubusercontent.com/u/739001",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
     "slug": "clear-caches",
     "name": "Clear Caches",
     "description": "Purge all of the WordPress caches",
@@ -126,18 +154,18 @@
     "compatible": true
   },
   {
-  "slug": "dt-home",
-  "name": "DT Home",
-  "description": "An app home screen for Disciple.Tools. Part of the DT Toolbox.",
-  "author": "The Code Zone",
-  "author_url": "https://github.com/thecodezone",
-  "repo": "thecodezone/dt-home",
-  "icon_url": "https://avatars.githubusercontent.com/u/58779692",
-  "rating": 4.8,
-  "ratings_count": 100,
-  "active_installs": 5000,
-  "last_updated": "2024-10-12",
-  "compatible": true
+    "slug": "dt-home",
+    "name": "DT Home",
+    "description": "An app home screen for Disciple.Tools. Part of the DT Toolbox.",
+    "author": "The Code Zone",
+    "author_url": "https://github.com/thecodezone",
+    "repo": "thecodezone/dt-home",
+    "icon_url": "https://avatars.githubusercontent.com/u/58779692",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
   },
   {
     "slug": "force-https",
@@ -154,18 +182,18 @@
     "compatible": true
   },
   {
-  "slug": "miso-wordpress-plugin",
-  "name": "Miso AI",
-  "description": "The official WordPress plugin for Miso AI data integration.",
-  "author": "Simon Pai",
-  "author_url": "https://miso.ai",
-  "repo": "MisoAI/miso-wordpress-plugin",
-  "icon_url": "https://avatars.githubusercontent.com/u/22569795",
-  "rating": 4.8,
-  "ratings_count": 100,
-  "active_installs": 5000,
-  "last_updated": "2024-10-12",
-  "compatible": true
+    "slug": "miso-wordpress-plugin",
+    "name": "Miso AI",
+    "description": "The official WordPress plugin for Miso AI data integration.",
+    "author": "Simon Pai",
+    "author_url": "https://miso.ai",
+    "repo": "MisoAI/miso-wordpress-plugin",
+    "icon_url": "https://avatars.githubusercontent.com/u/22569795",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
   },
   {
     "slug": "multisite-billing-manager",
@@ -182,18 +210,18 @@
     "compatible": true
   },
   {
-  "slug": "pods",
-  "name": "Pods Framework",
-  "description": "Pods is a framework for creating, managing, and deploying customized content types and fields",
-  "author": "Pods Framework Team",
-  "author_url": "https://pods.io",
-  "repo": "pods-framework/pods",
-  "icon_url": "https://avatars.githubusercontent.com/u/1049430",
-  "rating": 4.8,
-  "ratings_count": 100,
-  "active_installs": 5000,
-  "last_updated": "2024-10-12",
-  "compatible": true
+    "slug": "pods",
+    "name": "Pods Framework",
+    "description": "Pods is a framework for creating, managing, and deploying customized content types and fields",
+    "author": "Pods Framework Team",
+    "author_url": "https://pods.io",
+    "repo": "pods-framework/pods",
+    "icon_url": "https://avatars.githubusercontent.com/u/1049430",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
   },
   {
     "slug": "pressbooks",
