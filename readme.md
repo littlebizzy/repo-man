@@ -4,6 +4,10 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.4.4
+- added `boogah/biscotti`
+- added `zouloux/bowl`
+
 ### 1.4.3
 - added `MisoAI/miso-wordpress-plugin`
 - added `pods-framework/pods`
