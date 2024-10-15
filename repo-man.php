@@ -3,7 +3,7 @@
 Plugin Name: Repo Man
 Plugin URI: https://www.littlebizzy.com/plugins/repo-man
 Description: Install public repos to WordPress
-Version: 1.4.4
+Version: 1.5.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -535,5 +535,60 @@ function repo_man_rename_plugin_folder( $response, $hook_extra, $result ) {
 
     return $response;
 }
+
+// Scan the main plugin file for the 'GitHub Plugin URI' string
+function scan_plugin_main_file_for_github_uri( $plugin_file ) {
+    $github_uri_found = false;
+    $plugin_file_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+
+    // Check if the plugin file exists and is readable
+    if ( file_exists( $plugin_file_path ) && is_readable( $plugin_file_path ) ) {
+        $file_content = @file_get_contents( $plugin_file_path );
+        
+        // If the file couldn't be read, log the error and skip
+        if ( false === $file_content ) {
+            error_log("Failed to read plugin file: " . $plugin_file_path . ". This might be due to file permissions or corruption.");
+        } else {
+            // Check if the 'GitHub Plugin URI' string exists in the file (case-sensitive)
+            if ( strpos( $file_content, 'GitHub Plugin URI' ) !== false ) {
+                $github_uri_found = true;
+            }
+        }
+    } else {
+        // Log if the plugin file is not accessible
+        error_log("Plugin file does not exist or is not readable: " . $plugin_file_path);
+    }
+
+    return $github_uri_found;
+}
+
+// Scan all plugins for the 'GitHub Plugin URI' string and block updates dynamically
+function dynamic_block_plugin_updates( $overrides ) {
+    // Get all installed plugins (active and inactive)
+    $all_plugins = get_plugins();
+
+    // Loop through each plugin and scan the main file for the 'GitHub Plugin URI' string
+    foreach ( $all_plugins as $plugin_file => $plugin_data ) {
+        // Scan the main plugin file for 'GitHub Plugin URI'
+        if ( scan_plugin_main_file_for_github_uri( $plugin_file ) ) {
+            $overrides[] = $plugin_file; // Add to overrides if 'GitHub Plugin URI' is found
+        }
+    }
+
+    return $overrides;
+}
+add_filter( 'gu_override_dot_org', 'dynamic_block_plugin_updates', 999 );
+
+// Ensure this applies even if plugins are deactivated
+function dynamic_block_deactivated_plugin_updates( $transient ) {
+    $overrides = apply_filters( 'gu_override_dot_org', [] );
+    foreach ( $overrides as $plugin ) {
+        if ( isset( $transient->response[ $plugin ] ) ) {
+            unset( $transient->response[ $plugin ] );
+        }
+    }
+    return $transient;
+}
+add_filter( 'site_transient_update_plugins', 'dynamic_block_deactivated_plugin_updates' );
 
 // Ref: ChatGPT
