@@ -4,6 +4,11 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.5.0
+- automatically blocks all updates/notices from wordpress.org to any plugin with `GitHub Plugin URI` in the main file
+- both activated and deactivated plugins that support Git Updater will be "blocked" from wordpress.org
+- optimized loading order of all functions and filters
+
 ### 1.4.4
 - added `boogah/biscotti`
 - added `zouloux/bowl`
