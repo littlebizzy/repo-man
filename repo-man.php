@@ -30,6 +30,61 @@ function repo_man_load_textdomain() {
 }
 add_action( 'plugins_loaded', 'repo_man_load_textdomain' );
 
+// Scan the main plugin file for the 'GitHub Plugin URI' string
+function scan_plugin_main_file_for_github_uri( $plugin_file ) {
+    $github_uri_found = false;
+    $plugin_file_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+
+    // Check if the plugin file exists and is readable
+    if ( file_exists( $plugin_file_path ) && is_readable( $plugin_file_path ) ) {
+        $file_content = @file_get_contents( $plugin_file_path );
+        
+        // If the file couldn't be read, log the error and skip
+        if ( false === $file_content ) {
+            error_log("Failed to read plugin file: " . $plugin_file_path . ". This might be due to file permissions or corruption.");
+        } else {
+            // Check if the 'GitHub Plugin URI' string exists in the file (case-sensitive)
+            if ( strpos( $file_content, 'GitHub Plugin URI' ) !== false ) {
+                $github_uri_found = true;
+            }
+        }
+    } else {
+        // Log if the plugin file is not accessible
+        error_log("Plugin file does not exist or is not readable: " . $plugin_file_path);
+    }
+
+    return $github_uri_found;
+}
+
+// dynamically block updates for plugins with 'GitHub Plugin URI'
+function dynamic_block_plugin_updates( $overrides ) {
+    // Get all installed plugins (active and inactive)
+    $all_plugins = get_plugins();
+
+    // Loop through each plugin and scan the main file for the 'GitHub Plugin URI' string
+    foreach ( $all_plugins as $plugin_file => $plugin_data ) {
+        // Scan the main plugin file for 'GitHub Plugin URI'
+        if ( scan_plugin_main_file_for_github_uri( $plugin_file ) ) {
+            $overrides[] = $plugin_file; // Add to overrides if 'GitHub Plugin URI' is found
+        }
+    }
+
+    return $overrides;
+}
+add_filter( 'gu_override_dot_org', 'dynamic_block_plugin_updates', 999 );
+
+// Ensure this applies even if plugins are deactivated
+function dynamic_block_deactivated_plugin_updates( $transient ) {
+    $overrides = apply_filters( 'gu_override_dot_org', [] );
+    foreach ( $overrides as $plugin ) {
+        if ( isset( $transient->response[ $plugin ] ) ) {
+            unset( $transient->response[ $plugin ] );
+        }
+    }
+    return $transient;
+}
+add_filter( 'site_transient_update_plugins', 'dynamic_block_deactivated_plugin_updates' );
+
 // fetch plugin data from json file with secure handling and fallback for missing keys
 function repo_man_get_plugins_data() {
     // get the plugin directory path
@@ -102,7 +157,6 @@ function repo_man_get_plugins_data_with_cache() {
 }
 
 // handle the plugin information display
-add_filter( 'plugins_api', 'repo_man_plugins_api_handler', 99, 3 );
 function repo_man_plugins_api_handler( $result, $action, $args ) {
     // check if action is for plugin information
     if ( 'plugin_information' !== $action ) {
@@ -133,6 +187,7 @@ function repo_man_plugins_api_handler( $result, $action, $args ) {
     // return original result if no match is found
     return $result;
 }
+add_filter( 'plugins_api', 'repo_man_plugins_api_handler', 99, 3 );
 
 // prepare plugin information for the plugin installer
 function repo_man_prepare_plugin_information( $plugin ) {
@@ -310,109 +365,6 @@ function repo_man_get_plugin_download_link( $plugin ) {
     return esc_url_raw( $download_link );
 }
 
-// extend search results to include plugins from the json file and prioritize them when relevant
-add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
-function repo_man_extend_search_results( $res, $action, $args ) {
-    // return early if not a query_plugins action or search query is empty
-    if ( 'query_plugins' !== $action || empty( $args->search ) ) {
-        return $res;
-    }
-
-    // sanitize the search query
-    $search_query = sanitize_text_field( urldecode( $args->search ) );
-    $plugins      = repo_man_get_plugins_data_with_cache();
-
-    // return original results if there was an error or no plugins found
-    if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
-        return $res;
-    }
-
-    // normalize plugin data and prepare matching plugins array
-    $plugins          = array_map( 'repo_man_normalize_plugin_data', $plugins );
-    $matching_plugins = array();
-
-    // loop through plugins to calculate match score
-    foreach ( $plugins as $plugin ) {
-        $score = repo_man_calculate_match_score( $plugin, $search_query );
-        if ( $score > 0 ) {
-            $plugin['match_score'] = $score;
-            $matching_plugins[]    = $plugin;
-        }
-    }
-
-    // return original results if no matching plugins found
-    if ( empty( $matching_plugins ) ) {
-        return $res;
-    }
-
-    // sort matching plugins by score in descending order
-    usort( $matching_plugins, function( $a, $b ) {
-        return $b['match_score'] - $a['match_score'];
-    } );
-
-    // prepare formatted plugins for display
-    $formatted_plugins = array_map( 'repo_man_prepare_plugin_for_display', $matching_plugins );
-
-    // filter out original plugins that match the slugs of the formatted plugins
-    $original_plugins = $res->plugins;
-    $original_plugins = array_filter( $original_plugins, function( $plugin ) use ( $formatted_plugins ) {
-        return ! in_array( $plugin['slug'], wp_list_pluck( $formatted_plugins, 'slug' ), true );
-    } );
-
-    // merge formatted plugins with the original ones
-    $res->plugins        = array_merge( $formatted_plugins, $original_plugins );
-    $res->info['results'] = count( $res->plugins );
-
-    return $res;
-}
-
-// prepare plugin tiles for display
-function repo_man_prepare_plugin_for_display( $plugin ) {
-    // normalize the plugin data
-    $plugin = repo_man_normalize_plugin_data( $plugin );
-    // get the download link for the plugin
-    $download_link = repo_man_get_plugin_download_link( $plugin );
-
-    // return an array with plugin information
-    return array(
-        'id'                            => $plugin['slug'],
-        'type'                          => 'plugin',
-        'name'                          => sanitize_text_field( $plugin['name'] ),
-        'slug'                          => sanitize_title( $plugin['slug'] ),
-        'version'                       => sanitize_text_field( $plugin['version'] ),
-        'author'                        => sanitize_text_field( $plugin['author'] ),
-        'author_profile'                => ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '',
-        'contributors'                  => array(),
-        'requires'                      => '',
-        'tested'                        => '',
-        'requires_php'                  => '',
-        'rating'                        => intval( $plugin['rating'] ) * 20, // convert rating to a percentage
-        'num_ratings'                   => intval( $plugin['num_ratings'] ),
-        'support_threads'               => 0,
-        'support_threads_resolved'      => 0,
-        'active_installs'               => intval( $plugin['active_installs'] ),
-        'short_description'             => wp_kses_post( $plugin['description'] ),
-        'sections'                      => array(
-            'description' => wp_kses_post( $plugin['description'] ),
-        ),
-        'download_link'                 => $download_link,
-        'downloaded'                    => true,
-        'homepage'                      => ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '',
-        'tags'                          => array(),
-        'donate_link'                   => '',
-        'icons'                         => array(
-            'default' => ! empty( $plugin['icon_url'] ) ? esc_url( $plugin['icon_url'] ) : '',
-        ),
-        'banners'                       => array(),
-        'banners_rtl'                   => array(),
-        'last_updated'                  => sanitize_text_field( $plugin['last_updated'] ),
-        'added'                         => '',
-        'external'                      => false,
-        'package'                       => $download_link,
-        'plugin'                        => $plugin['slug'] . '/' . $plugin['slug'] . '.php',
-    );
-}
-
 // normalize plugin data
 function repo_man_normalize_plugin_data( $plugin ) {
     // set default values for plugin data
@@ -489,9 +441,54 @@ function repo_man_calculate_match_score( $plugin, $search_query ) {
     return $score;
 }
 
-// handle the renaming of the plugin folder after installation
-add_filter( 'upgrader_post_install', 'repo_man_rename_plugin_folder', 10, 3 );
+// prepare plugin tiles for display
+function repo_man_prepare_plugin_for_display( $plugin ) {
+    // normalize the plugin data
+    $plugin = repo_man_normalize_plugin_data( $plugin );
+    // get the download link for the plugin
+    $download_link = repo_man_get_plugin_download_link( $plugin );
 
+    // return an array with plugin information
+    return array(
+        'id'                            => $plugin['slug'],
+        'type'                          => 'plugin',
+        'name'                          => sanitize_text_field( $plugin['name'] ),
+        'slug'                          => sanitize_title( $plugin['slug'] ),
+        'version'                       => sanitize_text_field( $plugin['version'] ),
+        'author'                        => sanitize_text_field( $plugin['author'] ),
+        'author_profile'                => ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '',
+        'contributors'                  => array(),
+        'requires'                      => '',
+        'tested'                        => '',
+        'requires_php'                  => '',
+        'rating'                        => intval( $plugin['rating'] ) * 20, // convert rating to a percentage
+        'num_ratings'                   => intval( $plugin['num_ratings'] ),
+        'support_threads'               => 0,
+        'support_threads_resolved'      => 0,
+        'active_installs'               => intval( $plugin['active_installs'] ),
+        'short_description'             => wp_kses_post( $plugin['description'] ),
+        'sections'                      => array(
+            'description' => wp_kses_post( $plugin['description'] ),
+        ),
+        'download_link'                 => $download_link,
+        'downloaded'                    => true,
+        'homepage'                      => ! empty( $plugin['author_url'] ) ? esc_url( $plugin['author_url'] ) : '',
+        'tags'                          => array(),
+        'donate_link'                   => '',
+        'icons'                         => array(
+            'default' => ! empty( $plugin['icon_url'] ) ? esc_url( $plugin['icon_url'] ) : '',
+        ),
+        'banners'                       => array(),
+        'banners_rtl'                   => array(),
+        'last_updated'                  => sanitize_text_field( $plugin['last_updated'] ),
+        'added'                         => '',
+        'external'                      => false,
+        'package'                       => $download_link,
+        'plugin'                        => $plugin['slug'] . '/' . $plugin['slug'] . '.php',
+    );
+}
+
+// handle the renaming of the plugin folder after installation
 function repo_man_rename_plugin_folder( $response, $hook_extra, $result ) {
     // only proceed if installing a plugin
     if ( isset( $hook_extra['type'] ) && 'plugin' === $hook_extra['type'] ) {
@@ -535,60 +532,62 @@ function repo_man_rename_plugin_folder( $response, $hook_extra, $result ) {
 
     return $response;
 }
+add_filter( 'upgrader_post_install', 'repo_man_rename_plugin_folder', 10, 3 );
 
-// Scan the main plugin file for the 'GitHub Plugin URI' string
-function scan_plugin_main_file_for_github_uri( $plugin_file ) {
-    $github_uri_found = false;
-    $plugin_file_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-
-    // Check if the plugin file exists and is readable
-    if ( file_exists( $plugin_file_path ) && is_readable( $plugin_file_path ) ) {
-        $file_content = @file_get_contents( $plugin_file_path );
-        
-        // If the file couldn't be read, log the error and skip
-        if ( false === $file_content ) {
-            error_log("Failed to read plugin file: " . $plugin_file_path . ". This might be due to file permissions or corruption.");
-        } else {
-            // Check if the 'GitHub Plugin URI' string exists in the file (case-sensitive)
-            if ( strpos( $file_content, 'GitHub Plugin URI' ) !== false ) {
-                $github_uri_found = true;
-            }
-        }
-    } else {
-        // Log if the plugin file is not accessible
-        error_log("Plugin file does not exist or is not readable: " . $plugin_file_path);
+// extend search results to include plugins from the json file and prioritize them when relevant
+function repo_man_extend_search_results( $res, $action, $args ) {
+    // return early if not a query_plugins action or search query is empty
+    if ( 'query_plugins' !== $action || empty( $args->search ) ) {
+        return $res;
     }
 
-    return $github_uri_found;
-}
+    // sanitize the search query
+    $search_query = sanitize_text_field( urldecode( $args->search ) );
+    $plugins      = repo_man_get_plugins_data_with_cache();
 
-// Scan all plugins for the 'GitHub Plugin URI' string and block updates dynamically
-function dynamic_block_plugin_updates( $overrides ) {
-    // Get all installed plugins (active and inactive)
-    $all_plugins = get_plugins();
+    // return original results if there was an error or no plugins found
+    if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
+        return $res;
+    }
 
-    // Loop through each plugin and scan the main file for the 'GitHub Plugin URI' string
-    foreach ( $all_plugins as $plugin_file => $plugin_data ) {
-        // Scan the main plugin file for 'GitHub Plugin URI'
-        if ( scan_plugin_main_file_for_github_uri( $plugin_file ) ) {
-            $overrides[] = $plugin_file; // Add to overrides if 'GitHub Plugin URI' is found
+    // normalize plugin data and prepare matching plugins array
+    $plugins          = array_map( 'repo_man_normalize_plugin_data', $plugins );
+    $matching_plugins = array();
+
+    // loop through plugins to calculate match score
+    foreach ( $plugins as $plugin ) {
+        $score = repo_man_calculate_match_score( $plugin, $search_query );
+        if ( $score > 0 ) {
+            $plugin['match_score'] = $score;
+            $matching_plugins[]    = $plugin;
         }
     }
 
-    return $overrides;
-}
-add_filter( 'gu_override_dot_org', 'dynamic_block_plugin_updates', 999 );
-
-// Ensure this applies even if plugins are deactivated
-function dynamic_block_deactivated_plugin_updates( $transient ) {
-    $overrides = apply_filters( 'gu_override_dot_org', [] );
-    foreach ( $overrides as $plugin ) {
-        if ( isset( $transient->response[ $plugin ] ) ) {
-            unset( $transient->response[ $plugin ] );
-        }
+    // return original results if no matching plugins found
+    if ( empty( $matching_plugins ) ) {
+        return $res;
     }
-    return $transient;
+
+    // sort matching plugins by score in descending order
+    usort( $matching_plugins, function( $a, $b ) {
+        return $b['match_score'] - $a['match_score'];
+    } );
+
+    // prepare formatted plugins for display
+    $formatted_plugins = array_map( 'repo_man_prepare_plugin_for_display', $matching_plugins );
+
+    // filter out original plugins that match the slugs of the formatted plugins
+    $original_plugins = $res->plugins;
+    $original_plugins = array_filter( $original_plugins, function( $plugin ) use ( $formatted_plugins ) {
+        return ! in_array( $plugin['slug'], wp_list_pluck( $formatted_plugins, 'slug' ), true );
+    } );
+
+    // merge formatted plugins with the original ones
+    $res->plugins        = array_merge( $formatted_plugins, $original_plugins );
+    $res->info['results'] = count( $res->plugins );
+
+    return $res;
 }
-add_filter( 'site_transient_update_plugins', 'dynamic_block_deactivated_plugin_updates' );
+add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
 
 // Ref: ChatGPT
