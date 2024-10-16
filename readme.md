@@ -1,4 +1,4 @@
-# Repo Man
+# RepoMan
 
 Install public repos to WordPress
 
@@ -7,6 +7,7 @@ Install public repos to WordPress
 ### 1.6.0
 - changed name from "Repo Man" to "RepoMan" for better branding
 - all `repo-man` and `repo_man` instances in the code changed to simply `repoman`
+- textdomain is also now simply `repoman` for translation support
 
 ### 1.5.0
 - automatically blocks all updates/notices from wordpress.org to any plugin with `GitHub Plugin URI` in the main file
