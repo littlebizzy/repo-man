@@ -4,6 +4,10 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.6.0
+- changed name from "Repo Man" to "RepoMan" for better branding
+- all `repo-man` and `repo_man` instances in the code changed to simply `repoman`
+
 ### 1.5.0
 - automatically blocks all updates/notices from wordpress.org to any plugin with `GitHub Plugin URI` in the main file
 - both activated and deactivated plugins that support Git Updater will be "blocked" from wordpress.org
