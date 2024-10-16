@@ -1,15 +1,14 @@
-<?php
 /*
-Plugin Name: Repo Man
-Plugin URI: https://www.littlebizzy.com/plugins/repo-man
+Plugin Name: RepoMan
+Plugin URI: https://www.littlebizzy.com/plugins/repoman
 Description: Install public repos to WordPress
-Version: 1.5.0
+Version: 1.6.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
-Text Domain: repo-man
-GitHub Plugin URI: littlebizzy/repo-man
+Text Domain: repoman
+GitHub Plugin URI: littlebizzy/repoman
 Primary Branch: master
 */
 
@@ -20,15 +19,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // disable wordpress.org updates for this plugin
 add_filter( 'gu_override_dot_org', function( $overrides ) {
-    $overrides[] = 'repo-man/repo-man.php';
+    $overrides[] = 'repoman/repoman.php';
     return $overrides;
 }, 999 );
 
 // load plugin textdomain for translations
-function repo_man_load_textdomain() {
-    load_plugin_textdomain( 'repo-man', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+function repoman_load_textdomain() {
+    load_plugin_textdomain( 'repoman', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
-add_action( 'plugins_loaded', 'repo_man_load_textdomain' );
+add_action( 'plugins_loaded', 'repoman_load_textdomain' );
 
 // Scan the main plugin file for the 'GitHub Plugin URI' string
 function scan_plugin_main_file_for_github_uri( $plugin_file ) {
@@ -86,7 +85,7 @@ function dynamic_block_deactivated_plugin_updates( $transient ) {
 add_filter( 'site_transient_update_plugins', 'dynamic_block_deactivated_plugin_updates' );
 
 // fetch plugin data from json file with secure handling and fallback for missing keys
-function repo_man_get_plugins_data() {
+function repoman_get_plugins_data() {
     // get the plugin directory path
     $plugin_dir = plugin_dir_path( __FILE__ );
     // resolve the full path of the json file
@@ -94,13 +93,13 @@ function repo_man_get_plugins_data() {
 
     // check if the file exists and is within the plugin directory
     if ( ! $file || strpos( $file, realpath( $plugin_dir ) ) !== 0 ) {
-        return new WP_Error( 'file_missing', __( 'Error: the plugin-repos.json file is missing or outside the plugin directory', 'repo-man' ) );
+        return new WP_Error( 'file_missing', __( 'Error: the plugin-repos.json file is missing or outside the plugin directory', 'repoman' ) );
     }
 
     // attempt to read the json file content directly
     $content = @file_get_contents( $file );
     if ( false === $content ) {
-        return new WP_Error( 'file_unreadable', __( 'Error: the plugin-repos.json file could not be read', 'repo-man' ) );
+        return new WP_Error( 'file_unreadable', __( 'Error: the plugin-repos.json file could not be read', 'repoman' ) );
     }
 
     // decode the json content
@@ -108,26 +107,26 @@ function repo_man_get_plugins_data() {
 
     // check for json decoding errors
     if ( json_last_error() !== JSON_ERROR_NONE ) {
-        return new WP_Error( 'file_malformed', sprintf( __( 'Error: the plugin-repos.json file is malformed (%s)', 'repo-man' ), json_last_error_msg() ) );
+        return new WP_Error( 'file_malformed', sprintf( __( 'Error: the plugin-repos.json file is malformed (%s)', 'repoman' ), json_last_error_msg() ) );
     }
 
     // check if the decoded content is empty
     if ( empty( $plugins ) ) {
-        return new WP_Error( 'file_empty', __( 'Error: the plugin-repos.json file is empty or contains no plugins', 'repo-man' ) );
+        return new WP_Error( 'file_empty', __( 'Error: the plugin-repos.json file is empty or contains no plugins', 'repoman' ) );
     }
 
     // loop through plugins to set defaults and sanitize data
     foreach ( $plugins as &$plugin ) {
         $plugin['slug']            = isset( $plugin['slug'] ) ? sanitize_title( $plugin['slug'] ) : 'unknown-slug';
         $plugin['repo']            = isset( $plugin['repo'] ) ? sanitize_text_field( $plugin['repo'] ) : '';
-        $plugin['name']            = isset( $plugin['name'] ) ? sanitize_text_field( $plugin['name'] ) : __( 'unknown plugin', 'repo-man' );
+        $plugin['name']            = isset( $plugin['name'] ) ? sanitize_text_field( $plugin['name'] ) : __( 'unknown plugin', 'repoman' );
         $plugin['icon_url']        = isset( $plugin['icon_url'] ) ? esc_url_raw( $plugin['icon_url'] ) : '';
-        $plugin['description']     = isset( $plugin['description'] ) ? wp_kses_post( $plugin['description'] ) : __( 'no description available', 'repo-man' );
-        $plugin['author']          = isset( $plugin['author'] ) ? sanitize_text_field( $plugin['author'] ) : __( 'unknown author', 'repo-man' );
+        $plugin['description']     = isset( $plugin['description'] ) ? wp_kses_post( $plugin['description'] ) : __( 'no description available', 'repoman' );
+        $plugin['author']          = isset( $plugin['author'] ) ? sanitize_text_field( $plugin['author'] ) : __( 'unknown author', 'repoman' );
         $plugin['author_url']      = isset( $plugin['author_url'] ) ? esc_url_raw( $plugin['author_url'] ) : '#';
         $plugin['rating']          = isset( $plugin['rating'] ) ? intval( $plugin['rating'] ) : 0;
         $plugin['num_ratings']     = isset( $plugin['num_ratings'] ) ? intval( $plugin['num_ratings'] ) : 0;
-        $plugin['last_updated']    = isset( $plugin['last_updated'] ) ? sanitize_text_field( $plugin['last_updated'] ) : __( 'unknown', 'repo-man' );
+        $plugin['last_updated']    = isset( $plugin['last_updated'] ) ? sanitize_text_field( $plugin['last_updated'] ) : __( 'unknown', 'repoman' );
         $plugin['active_installs'] = isset( $plugin['active_installs'] ) ? intval( $plugin['active_installs'] ) : 0;
         $plugin['compatible']      = isset( $plugin['compatible'] ) ? (bool) $plugin['compatible'] : false;
     }
@@ -137,19 +136,19 @@ function repo_man_get_plugins_data() {
 }
 
 // fetch plugin data with caching via transients
-function repo_man_get_plugins_data_with_cache() {
-    $plugins = get_transient( 'repo_man_plugins' );
+function repoman_get_plugins_data_with_cache() {
+    $plugins = get_transient( 'repoman_plugins' );
 
     // check if cached data exists
     if ( false === $plugins ) {
-        $plugins = repo_man_get_plugins_data();
+        $plugins = repoman_get_plugins_data();
 
         // set the transient cache if no errors
         if ( ! is_wp_error( $plugins ) ) {
-            set_transient( 'repo_man_plugins', $plugins, HOUR_IN_SECONDS );
+            set_transient( 'repoman_plugins', $plugins, HOUR_IN_SECONDS );
         } else {
             // log error if fetching plugins failed
-            error_log( 'Repo Man Error: ' . $plugins->get_error_message() );
+            error_log( 'RepoMan Error: ' . $plugins->get_error_message() );
         }
     }
 
@@ -157,14 +156,14 @@ function repo_man_get_plugins_data_with_cache() {
 }
 
 // handle the plugin information display
-function repo_man_plugins_api_handler( $result, $action, $args ) {
+function repoman_plugins_api_handler( $result, $action, $args ) {
     // check if action is for plugin information
     if ( 'plugin_information' !== $action ) {
         return $result;
     }
 
     // fetch plugin data with cache
-    $plugins = repo_man_get_plugins_data_with_cache();
+    $plugins = repoman_get_plugins_data_with_cache();
 
     // return original result if there are errors or no plugins
     if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
@@ -175,10 +174,10 @@ function repo_man_plugins_api_handler( $result, $action, $args ) {
     foreach ( $plugins as $plugin ) {
         if ( $plugin['slug'] === $args->slug ) {
             // prepare plugin information
-            $plugin_info = repo_man_prepare_plugin_information( $plugin );
+            $plugin_info = repoman_prepare_plugin_information( $plugin );
 
             // store the plugin slug in a transient
-            set_transient( 'repo_man_installing_plugin', $plugin['slug'], 15 * MINUTE_IN_SECONDS );
+            set_transient( 'repoman_installing_plugin', $plugin['slug'], 15 * MINUTE_IN_SECONDS );
 
             return (object) $plugin_info;
         }
@@ -187,14 +186,14 @@ function repo_man_plugins_api_handler( $result, $action, $args ) {
     // return original result if no match is found
     return $result;
 }
-add_filter( 'plugins_api', 'repo_man_plugins_api_handler', 99, 3 );
+add_filter( 'plugins_api', 'repoman_plugins_api_handler', 99, 3 );
 
 // prepare plugin information for the plugin installer
-function repo_man_prepare_plugin_information( $plugin ) {
+function repoman_prepare_plugin_information( $plugin ) {
     // set the plugin version and sanitize
     $version = isset( $plugin['version'] ) ? sanitize_text_field( $plugin['version'] ) : '1.0.0';
     // get the plugin download link
-    $download_link = repo_man_get_plugin_download_link( $plugin );
+    $download_link = repoman_get_plugin_download_link( $plugin );
 
     // prepare the plugin data array
     $plugin_data = array(
@@ -228,17 +227,17 @@ function repo_man_prepare_plugin_information( $plugin ) {
 }
 
 // get the download link for the plugin from github with automatic branch detection
-function repo_man_get_plugin_download_link( $plugin ) {
+function repoman_get_plugin_download_link( $plugin ) {
     // check if the repo field is empty
     if ( empty( $plugin['repo'] ) ) {
-        error_log( 'Repo Man Error: repository owner/repo is empty for plugin ' . $plugin['slug'] );
+        error_log( 'RepoMan Error: repository owner/repo is empty for plugin ' . $plugin['slug'] );
         return '';
     }
 
     // split the owner and repo from the repo field
     $parts = explode( '/', $plugin['repo'] );
     if ( count( $parts ) < 2 ) {
-        error_log( 'Repo Man Error: invalid repository owner/repo format for plugin ' . $plugin['slug'] );
+        error_log( 'RepoMan Error: invalid repository owner/repo format for plugin ' . $plugin['slug'] );
         return '';
     }
 
@@ -246,7 +245,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
     $repo  = $parts[1];
 
     // check if the default branch is already cached
-    $cache_key = 'repo_man_default_branch_' . $owner . '_' . $repo;
+    $cache_key = 'repoman_default_branch_' . $owner . '_' . $repo;
     $default_branch = get_transient( $cache_key );
 
     // if not cached, retrieve the default branch via github api
@@ -255,14 +254,14 @@ function repo_man_get_plugin_download_link( $plugin ) {
 
         $response = wp_remote_get( $api_url, array(
             'headers' => array(
-                'user-agent' => 'Repo Man', // github api requires a user-agent header
+                'user-agent' => 'RepoMan', // github api requires a user-agent header
             ),
             'timeout' => 30, // increased timeout
         ) );
 
         // handle connection errors
         if ( is_wp_error( $response ) ) {
-            error_log( 'Repo Man Error: unable to connect to github api for plugin ' . $plugin['slug'] . '. error: ' . $response->get_error_message() );
+            error_log( 'RepoMan Error: unable to connect to github api for plugin ' . $plugin['slug'] . '. error: ' . $response->get_error_message() );
             $default_branch = 'master'; // fallback to 'master'
         } else {
             $body = wp_remote_retrieve_body( $response );
@@ -271,7 +270,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
             if ( json_last_error() === JSON_ERROR_NONE && isset( $data['default_branch'] ) ) {
                 $default_branch = sanitize_text_field( $data['default_branch'] );
             } else {
-                error_log( 'Repo Man Error: unable to retrieve default branch for plugin ' . $plugin['slug'] . '. json error: ' . json_last_error_msg() );
+                error_log( 'RepoMan Error: unable to retrieve default branch for plugin ' . $plugin['slug'] . '. json error: ' . json_last_error_msg() );
                 $default_branch = 'master'; // fallback to 'master'
             }
         }
@@ -286,7 +285,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
     // fetch the actual content to verify link existence
     $get_response = wp_remote_get( $download_link, array(
         'headers' => array(
-            'user-agent' => 'Repo Man',
+            'user-agent' => 'RepoMan',
         ),
         'timeout' => 30, // increased timeout for download link verification
     ) );
@@ -294,7 +293,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
     // handle errors for invalid zip file
     if ( is_wp_error( $get_response ) || wp_remote_retrieve_response_code( $get_response ) !== 200 ) {
         $error_message = is_wp_error( $get_response ) ? $get_response->get_error_message() : wp_remote_retrieve_response_message( $get_response );
-        error_log( "Repo Man Error: unable to access zip file at {$download_link} for plugin {$plugin['slug']}. response: " . print_r( $error_message, true ) );
+        error_log( "RepoMan Error: unable to access zip file at {$download_link} for plugin {$plugin['slug']}. response: " . print_r( $error_message, true ) );
 
         // attempt fallback to 'main' if default branch download failed
         if ( 'master' !== $default_branch ) {
@@ -303,7 +302,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
 
             $fallback_get_response = wp_remote_get( $fallback_download_link, array(
                 'headers' => array(
-                    'user-agent' => 'Repo Man',
+                    'user-agent' => 'RepoMan',
                 ),
                 'timeout' => 30, // increased timeout for fallback download link verification
             ) );
@@ -321,7 +320,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
 
                 $fallback_get_response_main = wp_remote_get( $fallback_download_link, array(
                     'headers' => array(
-                        'user-agent' => 'Repo Man',
+                        'user-agent' => 'RepoMan',
                     ),
                     'timeout' => 30, // increased timeout for final fallback download link verification
                 ) );
@@ -333,7 +332,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
                     // update the cached branch
                     set_transient( $cache_key, $default_branch, 12 * HOUR_IN_SECONDS );
                 } else {
-                    error_log( "Repo Man Error: unable to access zip file at {$fallback_download_link} for plugin {$plugin['slug']}." );
+                    error_log( "RepoMan Error: unable to access zip file at {$fallback_download_link} for plugin {$plugin['slug']}." );
                     return ''; // unable to find a valid zip file
                 }
             }
@@ -344,7 +343,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
 
             $fallback_get_response_main = wp_remote_get( $fallback_download_link, array(
                 'headers' => array(
-                    'user-agent' => 'Repo Man',
+                    'user-agent' => 'RepoMan',
                 ),
                 'timeout' => 30, // increased timeout for final fallback download link verification
             ) );
@@ -356,7 +355,7 @@ function repo_man_get_plugin_download_link( $plugin ) {
                 // update the cached branch
                 set_transient( $cache_key, $default_branch, 12 * HOUR_IN_SECONDS );
             } else {
-                error_log( "Repo Man Error: unable to access zip file at {$fallback_download_link} for plugin {$plugin['slug']}." );
+                error_log( "RepoMan Error: unable to access zip file at {$fallback_download_link} for plugin {$plugin['slug']}." );
                 return ''; // unable to find a valid zip file
             }
         }
@@ -366,20 +365,20 @@ function repo_man_get_plugin_download_link( $plugin ) {
 }
 
 // normalize plugin data
-function repo_man_normalize_plugin_data( $plugin ) {
+function repoman_normalize_plugin_data( $plugin ) {
     // set default values for plugin data
     $defaults = array(
-        'name'            => __( 'Unknown Plugin', 'repo-man' ),
+        'name'            => __( 'Unknown Plugin', 'repoman' ),
         'slug'            => 'unknown-slug',
-        'author'          => __( 'Unknown Author', 'repo-man' ),
+        'author'          => __( 'Unknown Author', 'repoman' ),
         'author_url'      => '',
         'version'         => '1.0.0',
         'rating'          => 0,
         'num_ratings'     => 0,
         'repo'            => '',
-        'last_updated'    => __( 'Unknown', 'repo-man' ),
+        'last_updated'    => __( 'Unknown', 'repoman' ),
         'active_installs' => 0,
-        'description'     => __( 'No description available.', 'repo-man' ),
+        'description'     => __( 'No description available.', 'repoman' ),
         'icon_url'        => '',
     );
 
@@ -388,7 +387,7 @@ function repo_man_normalize_plugin_data( $plugin ) {
 }
 
 // calculate match score based on search query
-function repo_man_calculate_match_score( $plugin, $search_query ) {
+function repoman_calculate_match_score( $plugin, $search_query ) {
     $score              = 0;
     $plugin_name        = strtolower( $plugin['name'] );
     $plugin_slug        = strtolower( $plugin['slug'] );
@@ -442,11 +441,11 @@ function repo_man_calculate_match_score( $plugin, $search_query ) {
 }
 
 // prepare plugin tiles for display
-function repo_man_prepare_plugin_for_display( $plugin ) {
+function repoman_prepare_plugin_for_display( $plugin ) {
     // normalize the plugin data
-    $plugin = repo_man_normalize_plugin_data( $plugin );
+    $plugin = repoman_normalize_plugin_data( $plugin );
     // get the download link for the plugin
-    $download_link = repo_man_get_plugin_download_link( $plugin );
+    $download_link = repoman_get_plugin_download_link( $plugin );
 
     // return an array with plugin information
     return array(
@@ -489,12 +488,12 @@ function repo_man_prepare_plugin_for_display( $plugin ) {
 }
 
 // handle the renaming of the plugin folder after installation
-function repo_man_rename_plugin_folder( $response, $hook_extra, $result ) {
+function repoman_rename_plugin_folder( $response, $hook_extra, $result ) {
     // only proceed if installing a plugin
     if ( isset( $hook_extra['type'] ) && 'plugin' === $hook_extra['type'] ) {
 
         // retrieve the desired slug from transient
-        $plugin_slug = get_transient( 'repo_man_installing_plugin' );
+        $plugin_slug = get_transient( 'repoman_installing_plugin' );
 
         if ( ! $plugin_slug ) {
             return $response; // nothing to do
@@ -504,7 +503,7 @@ function repo_man_rename_plugin_folder( $response, $hook_extra, $result ) {
         if ( is_array( $result ) && isset( $result['destination'] ) ) {
             $plugin_path = $result['destination'];
         } else {
-            error_log( 'repo man error: invalid result format for plugin installation' );
+            error_log( 'RepoMan Error: invalid result format for plugin installation' );
             return $response;
         }
 
@@ -522,20 +521,20 @@ function repo_man_rename_plugin_folder( $response, $hook_extra, $result ) {
                 $response = $new_plugin_path;
             } else {
                 error_log( 'failed to rename plugin folder from ' . $plugin_path . ' to ' . $new_plugin_path );
-                return new WP_Error( 'rename_failed', __( 'could not rename plugin directory', 'repo-man' ) );
+                return new WP_Error( 'rename_failed', __( 'could not rename plugin directory', 'repoman' ) );
             }
         }
     }
 
     // delete the transient as it's no longer needed
-    delete_transient( 'repo_man_installing_plugin' );
+    delete_transient( 'repoman_installing_plugin' );
 
     return $response;
 }
-add_filter( 'upgrader_post_install', 'repo_man_rename_plugin_folder', 10, 3 );
+add_filter( 'upgrader_post_install', 'repoman_rename_plugin_folder', 10, 3 );
 
 // extend search results to include plugins from the json file and prioritize them when relevant
-function repo_man_extend_search_results( $res, $action, $args ) {
+function repoman_extend_search_results( $res, $action, $args ) {
     // return early if not a query_plugins action or search query is empty
     if ( 'query_plugins' !== $action || empty( $args->search ) ) {
         return $res;
@@ -543,7 +542,7 @@ function repo_man_extend_search_results( $res, $action, $args ) {
 
     // sanitize the search query
     $search_query = sanitize_text_field( urldecode( $args->search ) );
-    $plugins      = repo_man_get_plugins_data_with_cache();
+    $plugins      = repoman_get_plugins_data_with_cache();
 
     // return original results if there was an error or no plugins found
     if ( is_wp_error( $plugins ) || empty( $plugins ) ) {
@@ -551,12 +550,12 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     }
 
     // normalize plugin data and prepare matching plugins array
-    $plugins          = array_map( 'repo_man_normalize_plugin_data', $plugins );
+    $plugins          = array_map( 'repoman_normalize_plugin_data', $plugins );
     $matching_plugins = array();
 
     // loop through plugins to calculate match score
     foreach ( $plugins as $plugin ) {
-        $score = repo_man_calculate_match_score( $plugin, $search_query );
+        $score = repoman_calculate_match_score( $plugin, $search_query );
         if ( $score > 0 ) {
             $plugin['match_score'] = $score;
             $matching_plugins[]    = $plugin;
@@ -574,7 +573,7 @@ function repo_man_extend_search_results( $res, $action, $args ) {
     } );
 
     // prepare formatted plugins for display
-    $formatted_plugins = array_map( 'repo_man_prepare_plugin_for_display', $matching_plugins );
+    $formatted_plugins = array_map( 'repoman_prepare_plugin_for_display', $matching_plugins );
 
     // filter out original plugins that match the slugs of the formatted plugins
     $original_plugins = $res->plugins;
@@ -588,6 +587,6 @@ function repo_man_extend_search_results( $res, $action, $args ) {
 
     return $res;
 }
-add_filter( 'plugins_api_result', 'repo_man_extend_search_results', 12, 3 );
+add_filter( 'plugins_api_result', 'repoman_extend_search_results', 12, 3 );
 
 // Ref: ChatGPT
