@@ -4,6 +4,11 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.6.1
+- added `Requires PHP: 7.0` header
+- added `wp-graphql/wp-graphql`
+- added `reduxframework/redux-framework`
+
 ### 1.6.0
 - changed name from "Repo Man" to "RepoMan" for better branding
 - all `repo-man` and `repo_man` instances in the code changed to simply `repoman`
