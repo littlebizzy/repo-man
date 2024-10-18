@@ -266,6 +266,20 @@
     "compatible": true
   },
   {
+    "slug": "redux-framework",
+    "name": "Redux Framework",
+    "description": "Build better sites in WordPress fast!",
+    "author": "Team Redux",
+    "author_url": "https://redux.io",
+    "repo": "reduxframework/redux-framework",
+    "icon_url": "https://avatars.githubusercontent.com/u/5377528",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
     "slug": "statcounter",
     "name": "StatCounter",
     "description": "Optimized StatCounter tracking",
@@ -287,6 +301,20 @@
     "author_url": "https://wpclouddeploy.com",
     "repo": "WPCloudDeploy/wp-cloud-deploy",
     "icon_url": "https://avatars.githubusercontent.com/u/67524577",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
+    "slug": "wp-graphql",
+    "name": "WPGraphQL",
+    "description": "GraphQL API for WordPress",
+    "author": "WPGraphQL",
+    "author_url": "https://www.wpgraphql.com",
+    "repo": "wp-graphql/wp-graphql",
+    "icon_url": "https://avatars.githubusercontent.com/u/24994409",
     "rating": 4.8,
     "ratings_count": 100,
     "active_installs": 5000,
