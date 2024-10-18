@@ -4,6 +4,9 @@ Install public repos to WordPress
 
 ## Changelog
 
+### 1.6.2
+- added `discourse/wp-discourse`
+
 ### 1.6.1
 - added `Requires PHP: 7.0` header
 - added `wp-graphql/wp-graphql`
