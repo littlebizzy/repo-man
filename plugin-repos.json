@@ -308,6 +308,20 @@
     "compatible": true
   },
   {
+    "slug": "wp-discourse",
+    "name": "WP Discourse",
+    "description": "Use Discourse as a community engine for your WordPress blog",
+    "author": "Discourse",
+    "author_url": "https://www.discourse.org",
+    "repo": "discourse/wp-discourse",
+    "icon_url": "https://avatars.githubusercontent.com/u/3220138",
+    "rating": 4.8,
+    "ratings_count": 100,
+    "active_installs": 5000,
+    "last_updated": "2024-10-12",
+    "compatible": true
+  },
+  {
     "slug": "wp-graphql",
     "name": "WPGraphQL",
     "description": "GraphQL API for WordPress",
